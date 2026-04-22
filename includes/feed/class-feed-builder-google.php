@@ -40,6 +40,7 @@ class OtwFeed_Feed_Builder_Google {
         $attrs  = OtwFeed_Product_Query::get_product_attributes( $product );
         $attrs['permalink']    = OtwFeed_Currency_Manager::get_currency_url( $attrs['permalink'],    $feed->currency );
         $attrs['permalink']    = add_query_arg( array(
+            'wc-country'   => strtoupper( $feed->country ),
             'utm_source'   => 'Google Shopping',
             'utm_medium'   => 'cpc',
             'utm_campaign' => $feed->title,
