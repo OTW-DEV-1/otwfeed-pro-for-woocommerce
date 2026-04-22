@@ -1,0 +1,999 @@
+/*
+ * OtwFeed Pro — Admin CSS (Dark Theme)
+ * Design: bg #0E1116, surface #1E1E23, primary #21759B, accent #00A0D2, text #F4F6F8
+ */
+
+/* ── Page-level dark theme (outside .otwfeed-wrap) ────────────────────────── */
+body.otwfeed-admin-page #wpcontent,
+body.otwfeed-admin-page #wpbody-content {
+  background: #0e1116;
+}
+
+body.otwfeed-admin-page .notice,
+body.otwfeed-admin-page .updated,
+body.otwfeed-admin-page .error,
+body.otwfeed-admin-page .update-nag {
+  background:        #1e1e23;
+  border:            1px solid #2e3040;
+  border-left:       4px solid #00a0d2;
+  color:             #f4f6f8;
+  box-shadow:        none;
+}
+
+body.otwfeed-admin-page .notice-error   { border-left-color: #d64045; }
+body.otwfeed-admin-page .notice-warning { border-left-color: #f5a623; }
+body.otwfeed-admin-page .notice-success { border-left-color: #28a745; }
+body.otwfeed-admin-page .notice-info    { border-left-color: #00a0d2; }
+
+body.otwfeed-admin-page .notice p,
+body.otwfeed-admin-page .updated p,
+body.otwfeed-admin-page .error p {
+  color: #f4f6f8;
+}
+
+body.otwfeed-admin-page .notice a,
+body.otwfeed-admin-page .notice .button {
+  color: #00a0d2;
+}
+
+body.otwfeed-admin-page .notice-dismiss::before {
+  color: #8a9bb0;
+}
+
+body.otwfeed-admin-page .notice-dismiss:hover::before {
+  color: #f4f6f8;
+}
+
+/* ── Reset scoping ─────────────────────────────────────────────────────────── */
+.otwfeed-wrap {
+  --otwf-bg: #0e1116;
+  --otwf-surface: #1e1e23;
+  --otwf-surface-2: #252530;
+  --otwf-border: #2e3040;
+  --otwf-primary: #21759b;
+  --otwf-primary-h: #1a5e7d;
+  --otwf-accent: #00a0d2;
+  --otwf-accent-h: #0083ae;
+  --otwf-text: #f4f6f8;
+  --otwf-muted: #8a9bb0;
+  --otwf-danger: #d64045;
+  --otwf-success: #28a745;
+  --otwf-radius: 6px;
+
+  color: var(--otwf-text);
+  background: transparent;
+  font-size: 14px;
+}
+
+.otwfeed-wrap *,
+.otwfeed-wrap *::before,
+.otwfeed-wrap *::after {
+  box-sizing: border-box;
+}
+
+/* ── Bootstrap card override for WP admin ──────────────────────────────────── */
+.otwfeed-wrap .card {
+  max-width: 100%;
+  background-color: var(--otwf-surface);
+  border: 1px solid var(--otwf-border);
+  border-radius: var(--otwf-radius);
+  color: var(--otwf-text);
+  margin-bottom: 0;
+}
+
+.otwfeed-wrap .card-header {
+  background-color: var(--otwf-surface-2);
+  border-bottom: 1px solid var(--otwf-border);
+  padding: 12px 16px;
+}
+
+.otwfeed-wrap .card-title {
+  color: var(--otwf-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.otwfeed-wrap .card-body {
+  padding: 16px;
+}
+
+.otwfeed-wrap .card-footer {
+  background-color: var(--otwf-surface-2);
+  border-top: 1px solid var(--otwf-border);
+  padding: 12px 16px;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.otwfeed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.otwfeed-header__logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.otwfeed-header__logo h1 {
+  color: var(--otwf-text);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  border: none;
+}
+
+.otwfeed-header__logo .dashicons {
+  color: var(--otwf-accent);
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.otwfeed-back {
+  color: var(--otwf-muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.otwfeed-back:hover {
+  color: var(--otwf-accent);
+}
+
+/* ── Section label ─────────────────────────────────────────────────────────── */
+.otwfeed-section-label {
+  color: var(--otwf-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 6px;
+}
+
+/* ── Stat cards ────────────────────────────────────────────────────────────── */
+.otwfeed-stat-card {
+  text-align: center;
+}
+
+.otwfeed-stat__label {
+  color: var(--otwf-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.otwfeed-stat__value {
+  color: var(--otwf-text);
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.otwfeed-stat__value--accent {
+  color: var(--otwf-accent);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.otwfeed-wrap .btn {
+  border-radius: var(--otwf-radius);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  cursor: pointer;
+}
+
+.otwfeed-wrap .btn-primary {
+  background-color: var(--otwf-primary);
+  border-color: var(--otwf-primary);
+  color: #fff;
+}
+
+.otwfeed-wrap .btn-primary:hover,
+.otwfeed-wrap .btn-primary:focus {
+  background-color: var(--otwf-primary-h);
+  border-color: var(--otwf-primary-h);
+  color: #fff;
+}
+
+.otwfeed-wrap .btn-secondary {
+  background-color: var(--otwf-surface-2);
+  border-color: var(--otwf-border);
+  color: var(--otwf-text);
+}
+
+.otwfeed-wrap .btn-secondary:hover {
+  background-color: var(--otwf-border);
+  color: var(--otwf-text);
+}
+
+.otwfeed-wrap .btn-outline-primary {
+  color: var(--otwf-primary);
+  border-color: var(--otwf-primary);
+  background-color: transparent;
+}
+
+.otwfeed-wrap .btn-outline-primary:hover {
+  background-color: var(--otwf-primary);
+  color: #fff;
+}
+
+.otwfeed-wrap .btn-outline-accent {
+  color: var(--otwf-accent);
+  border-color: var(--otwf-accent);
+  background-color: transparent;
+}
+
+.otwfeed-wrap .btn-outline-accent:hover {
+  background-color: var(--otwf-accent);
+  color: #fff;
+}
+
+.otwfeed-wrap .btn-outline-secondary {
+  color: var(--otwf-muted);
+  border-color: var(--otwf-border);
+  background-color: transparent;
+}
+
+.otwfeed-wrap .btn-outline-secondary:hover {
+  background-color: var(--otwf-surface-2);
+  color: var(--otwf-text);
+}
+
+.otwfeed-wrap .btn-outline-danger {
+  color: var(--otwf-danger);
+  border-color: var(--otwf-danger);
+  background-color: transparent;
+}
+
+.otwfeed-wrap .btn-outline-danger:hover {
+  background-color: var(--otwf-danger);
+  color: #fff;
+}
+
+.otwfeed-wrap .btn-ghost-danger {
+  background: transparent;
+  border: none;
+  color: var(--otwf-danger);
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.otwfeed-wrap .btn-ghost-danger:hover {
+  color: #ff6666;
+}
+
+.otwfeed-wrap .btn-xs {
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.otwfeed-wrap .btn-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+/* ── Forms ─────────────────────────────────────────────────────────────────── */
+.otwfeed-wrap .form-control,
+.otwfeed-wrap .form-select {
+  background-color: var(--otwf-bg);
+  border: 1px solid var(--otwf-border);
+  color: var(--otwf-text);
+  border-radius: var(--otwf-radius);
+  font-size: 13px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.otwfeed-wrap .form-control:focus,
+.otwfeed-wrap .form-select:focus {
+  background-color: var(--otwf-bg);
+  border-color: var(--otwf-primary);
+  color: var(--otwf-text);
+  box-shadow: 0 0 0 2px rgba(33, 117, 155, 0.25);
+  outline: none;
+}
+
+.otwfeed-wrap .form-control::placeholder {
+  color: var(--otwf-muted);
+}
+
+.otwfeed-wrap .form-label {
+  color: var(--otwf-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.otwfeed-wrap .form-text {
+  font-size: 11px;
+  color: var(--otwf-muted);
+}
+
+.otwfeed-wrap .form-check-input {
+  background-color: var(--otwf-bg);
+  border-color: var(--otwf-border);
+}
+
+.otwfeed-wrap .form-check-input:checked {
+  background-color: var(--otwf-primary);
+  border-color: var(--otwf-primary);
+}
+
+.otwfeed-wrap .form-check-label {
+  color: var(--otwf-text);
+}
+
+.otwfeed-wrap .input-group .form-control {
+  border-right: none;
+}
+
+.otwfeed-wrap .input-group .btn {
+  border-left: 1px solid var(--otwf-border);
+}
+
+/* ── Select2 dark override ─────────────────────────────────────────────────── */
+.otwfeed-wrap .select2-container {
+  width: 100% !important;
+}
+
+.otwfeed-wrap .select2-container--default .select2-selection--single {
+  background-color: var(--otwf-bg);
+  border: 1px solid var(--otwf-border);
+  border-radius: var(--otwf-radius);
+  height: 40px;
+  color: var(--otwf-text);
+}
+
+.otwfeed-wrap
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
+  color: var(--otwf-text);
+  line-height: 38px;
+  padding-left: 12px;
+  font-size: 13px;
+}
+
+.otwfeed-wrap
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
+  height: 38px;
+  top: 0;
+  right: 6px;
+}
+
+.otwfeed-wrap
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
+  border-color: var(--otwf-muted) transparent transparent;
+}
+
+.select2-dropdown {
+  background-color: var(--otwf-surface) !important;
+  border: 1px solid var(--otwf-border) !important;
+  border-radius: var(--otwf-radius) !important;
+}
+
+.select2-results__option {
+  color: var(--otwf-text) !important;
+  padding: 6px 10px !important;
+}
+
+.select2-container--default .select2-results__option--highlighted {
+  background-color: var(--otwf-primary) !important;
+  color: #fff !important;
+}
+
+.select2-search--dropdown .select2-search__field {
+  background-color: var(--otwf-bg) !important;
+  border: 1px solid var(--otwf-border) !important;
+  color: var(--otwf-text) !important;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+.otwfeed-wrap .table-responsive {
+  border-radius: var(--otwf-radius);
+  overflow: hidden;
+}
+
+.otwfeed-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  color: var(--otwf-text);
+  font-size: 13px;
+}
+
+.otwfeed-table th {
+  background: var(--otwf-surface-2);
+  color: var(--otwf-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--otwf-border);
+  white-space: nowrap;
+  text-align: start;
+}
+
+.otwfeed-table td {
+  background-color: var(--otwf-surface);
+  color:            var(--otwf-text);
+  padding:          9px 12px;
+  border-bottom:    1px solid var(--otwf-border);
+  vertical-align:   middle;
+}
+
+.otwfeed-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.otwfeed-table tbody tr:hover td {
+  background-color: var(--otwf-surface-2);
+}
+
+/* ── Badges ────────────────────────────────────────────────────────────────── */
+.otwfeed-wrap .badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+.otwfeed-wrap .bg-success {
+  background-color: var(--otwf-success) !important;
+}
+.otwfeed-wrap .bg-secondary {
+  background-color: var(--otwf-surface-2) !important;
+  color: var(--otwf-muted) !important;
+}
+.otwfeed-wrap .bg-info {
+  background-color: var(--otwf-primary) !important;
+}
+.otwfeed-wrap .text-accent {
+  color: var(--otwf-accent);
+}
+
+.otwfeed-channel-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.otwfeed-channel-badge--google {
+  background: rgba(33, 117, 155, 0.25);
+  color: #5ab4e5;
+}
+.otwfeed-channel-badge--facebook {
+  background: rgba(24, 119, 242, 0.25);
+  color: #80b0f8;
+}
+
+.otwfeed-integration-badge {
+  font-weight: 700;
+  font-size: 13px;
+}
+.otwfeed-integration-badge--curcy {
+  color: #f5a623;
+}
+.otwfeed-integration-badge--fox {
+  color: #7ed321;
+}
+.otwfeed-integration-badge--woocommerce {
+  color: var(--otwf-accent);
+}
+.otwfeed-integration-badge--none {
+  color: var(--otwf-muted);
+}
+
+/* ── Status dots ───────────────────────────────────────────────────────────── */
+.otwfeed-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.otwfeed-status-dot--on {
+  background: var(--otwf-success);
+}
+.otwfeed-status-dot--off {
+  background: var(--otwf-muted);
+}
+.otwfeed-status-dot--warn {
+  background: #f5a623;
+}
+
+/* ── Integration rows ──────────────────────────────────────────────────────── */
+.otwfeed-integration-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.otwfeed-integration-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--otwf-bg);
+  border-radius: var(--otwf-radius);
+  border: 1px solid var(--otwf-border);
+  font-size: 13px;
+}
+
+.otwfeed-integration-card .otwfeed-currency-code {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--otwf-accent);
+}
+
+/* ── Currency grid ─────────────────────────────────────────────────────────── */
+.otwfeed-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.otwfeed-currency-item {
+  background: var(--otwf-bg);
+  border: 1px solid var(--otwf-border);
+  border-radius: var(--otwf-radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.otwfeed-currency-item--base {
+  border-color: var(--otwf-accent);
+}
+
+.otwfeed-currency-item__code {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--otwf-text);
+}
+
+.otwfeed-currency-item__symbol {
+  font-size: 12px;
+  color: var(--otwf-muted);
+}
+
+.otwfeed-currency-item__rate {
+  font-size: 11px;
+  color: var(--otwf-muted);
+  margin-top: 4px;
+}
+
+/* ── Wizard ────────────────────────────────────────────────────────────────── */
+.otwfeed-wizard-steps {
+  display: flex;
+  gap: 0;
+  border-radius: var(--otwf-radius);
+  overflow: hidden;
+  border: 1px solid var(--otwf-border);
+}
+
+.otwfeed-wizard-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--otwf-surface);
+  color: var(--otwf-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-right: 1px solid var(--otwf-border);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.otwfeed-wizard-step:last-child {
+  border-right: none;
+}
+
+.otwfeed-wizard-step.active,
+.otwfeed-wizard-step.completed {
+  background: var(--otwf-primary);
+  color: #fff;
+}
+
+.otwfeed-wizard-step.completed {
+  background: var(--otwf-surface-2);
+  color: var(--otwf-accent);
+}
+
+.otwfeed-wizard-step__num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.otwfeed-wizard-nav {
+  padding-top: 4px;
+}
+
+.otwfeed-save-status {
+  font-size: 13px;
+  color: var(--otwf-muted);
+  min-height: 20px;
+}
+
+.otwfeed-save-status.is-success {
+  color: var(--otwf-success);
+}
+.otwfeed-save-status.is-error {
+  color: var(--otwf-danger);
+}
+
+/* ── Price preview ─────────────────────────────────────────────────────────── */
+.otwfeed-price-preview {
+  background: var(--otwf-bg);
+  border: 1px solid var(--otwf-border);
+  border-radius: var(--otwf-radius);
+  padding: 14px 16px;
+}
+
+.otwfeed-price-result {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--otwf-accent);
+  min-height: 22px;
+}
+
+/* ── Feed URL input ────────────────────────────────────────────────────────── */
+.otwfeed-feed-url-input {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--otwf-muted) !important;
+  cursor: text;
+}
+
+/* ── Mapping table ─────────────────────────────────────────────────────────── */
+.otwfeed-mapping-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.otwfeed-mapping-table td,
+.otwfeed-mapping-table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Let the source/value cell wrap if needed so Select2 doesn't overflow */
+.otwfeed-mapping-table .otwfeed-source-val-cell {
+  white-space: normal;
+  overflow: visible;
+}
+
+/* ── Custom toggle switch ──────────────────────────────────────────────────── */
+.otwfeed-toggle-label {
+  display:     inline-flex;
+  align-items: center;
+  gap:         10px;
+  cursor:      pointer;
+  user-select: none;
+  font-size:   13px;
+  color:       var(--otwf-text);
+}
+
+.otwfeed-toggle-input {
+  position: absolute;
+  opacity:  0;
+  width:    0;
+  height:   0;
+}
+
+.otwfeed-toggle-track {
+  position:      relative;
+  width:         40px;
+  height:        22px;
+  border-radius: 11px;
+  background:    var(--otwf-border);
+  border:        1px solid var(--otwf-border);
+  transition:    background .2s, border-color .2s;
+  flex-shrink:   0;
+}
+
+.otwfeed-toggle-thumb {
+  position:      absolute;
+  top:           3px;
+  left:          3px;
+  width:         14px;
+  height:        14px;
+  border-radius: 50%;
+  background:    var(--otwf-muted);
+  transition:    left .2s, background .2s;
+}
+
+.otwfeed-toggle-input:checked + .otwfeed-toggle-track {
+  background:   var(--otwf-accent);
+  border-color: var(--otwf-accent);
+}
+
+.otwfeed-toggle-input:checked + .otwfeed-toggle-track .otwfeed-toggle-thumb {
+  left:       21px;
+  background: #fff;
+}
+
+.otwfeed-toggle-text {
+  color: var(--otwf-muted);
+  font-size: 13px;
+}
+
+.otwfeed-round-wrap {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  margin-top:  5px;
+  font-size:   12px;
+  color:       var(--otwf-muted);
+  cursor:      pointer;
+  white-space: nowrap;
+}
+
+.otwfeed-round-wrap input[type="checkbox"] {
+  accent-color: var(--otwf-accent);
+  cursor:       pointer;
+}
+
+.otwfeed-drag-handle {
+  cursor: grab;
+  color: var(--otwf-muted);
+  width: 36px;
+  text-align: center;
+}
+
+.otwfeed-mapping-row.dragging {
+  opacity: 0.4;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+.otwfeed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--otwf-muted);
+}
+
+.otwfeed-empty .dashicons {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: var(--otwf-border);
+}
+
+/* ── Danger card ───────────────────────────────────────────────────────────── */
+.otwfeed-danger-card {
+  border-color: rgba(214, 64, 69, 0.35);
+}
+
+/* ── Alerts (Bootstrap override) ───────────────────────────────────────────── */
+.otwfeed-wrap .alert {
+  border-radius: var(--otwf-radius);
+  font-size: 13px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.otwfeed-wrap .alert-success {
+  background: rgba(40, 167, 69, 0.15);
+  border: 1px solid rgba(40, 167, 69, 0.4);
+  color: var(--otwf-text);
+}
+
+/* ── Row gap / misc Bootstrap helpers ──────────────────────────────────────── */
+.otwfeed-wrap .row {
+  --bs-gutter-x: 16px;
+  --bs-gutter-y: 0;
+}
+.otwfeed-wrap .g-3 {
+  --bs-gutter-x: 12px;
+  --bs-gutter-y: 12px;
+}
+.otwfeed-wrap .mb-4 {
+  margin-bottom: 20px !important;
+}
+.otwfeed-wrap .mb-3 {
+  margin-bottom: 12px !important;
+}
+.otwfeed-wrap .mt-4 {
+  margin-top: 20px !important;
+}
+.otwfeed-wrap .mt-3 {
+  margin-top: 12px !important;
+}
+.otwfeed-wrap .me-auto {
+  margin-right: auto !important;
+}
+.otwfeed-wrap .ms-2 {
+  margin-left: 8px !important;
+}
+.otwfeed-wrap .ms-auto {
+  margin-left: auto !important;
+}
+.otwfeed-wrap .gap-1 {
+  gap: 4px !important;
+}
+.otwfeed-wrap .gap-2 {
+  gap: 8px !important;
+}
+.otwfeed-wrap .p-0 {
+  padding: 0 !important;
+}
+.otwfeed-wrap .py-4 {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+}
+.otwfeed-wrap .fw-semibold {
+  font-weight: 600;
+}
+.otwfeed-wrap .text-muted {
+  color: var(--otwf-muted) !important;
+}
+.otwfeed-wrap .text-center {
+  text-align: center;
+}
+.otwfeed-wrap .small {
+  font-size: 11px;
+}
+.otwfeed-wrap .fs-6 {
+  font-size: 13px !important;
+}
+.otwfeed-wrap code {
+  background: var(--otwf-bg);
+  color: var(--otwf-accent);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* ── Filter Group Builder ──────────────────────────────────────────────────── */
+.otwfeed-filter-group {
+  border: 2px solid var(--otwf-danger);
+  border-radius: var(--otwf-radius);
+  margin-bottom: 14px;
+}
+
+.otwfeed-fg-header {
+  display:          flex;
+  align-items:      center;
+  gap:              10px;
+  padding:          10px 14px;
+  background:       rgba(214, 64, 69, 0.08);
+  border-radius:    calc(var(--otwf-radius) - 2px) calc(var(--otwf-radius) - 2px) 0 0;
+}
+
+.otwfeed-fg-header .form-select {
+  max-width: 140px;
+}
+
+.otwfeed-fg-body {
+  padding: 12px 14px;
+}
+
+.otwfeed-fg-if-label {
+  font-size:      11px;
+  font-weight:    600;
+  color:          var(--otwf-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom:  8px;
+}
+
+.otwfeed-fg-conditions {
+  border:        2px dashed var(--otwf-accent);
+  border-radius: var(--otwf-radius);
+  padding:       10px 12px;
+  display:       flex;
+  flex-direction: column;
+  gap:           8px;
+}
+
+.otwfeed-fc-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+}
+
+.otwfeed-fc-attr { flex: 2; min-width: 130px; }
+.otwfeed-fc-op   { flex: 2; min-width: 160px; }
+.otwfeed-fc-val  { flex: 2; min-width: 120px; }
+
+.otwfeed-fc-case {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  font-size:   12px;
+  font-weight: 700;
+  color:       var(--otwf-muted);
+  white-space: nowrap;
+  cursor:      pointer;
+  flex-shrink: 0;
+}
+
+.otwfeed-fc-case input[type="checkbox"] {
+  accent-color: var(--otwf-accent);
+  cursor:       pointer;
+}
+
+.otwfeed-fc-val .otwfeed-fc-val-input:disabled {
+  opacity: 0.4;
+}
+
+/* ── Accessibility ─────────────────────────────────────────────────────────── */
+.otwfeed-wrap :focus-visible {
+  outline: 2px solid var(--otwf-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .otwfeed-wrap *,
+  .otwfeed-wrap *::before,
+  .otwfeed-wrap *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 1199px) {
+  .otwfeed-wizard-step span:not(.otwfeed-wizard-step__num) {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .otwfeed-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .otwfeed-wizard-steps {
+    flex-wrap: wrap;
+  }
+  .otwfeed-wizard-step {
+    flex: none;
+  }
+  .otwfeed-currency-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
