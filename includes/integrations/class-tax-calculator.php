@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OtwFeed_Tax_Calculator {
 
+    /** @var array<string,array> Keyed by "{country}|{tax_class}" — avoids repeated DB lookups. */
+    private static array $rate_cache = array();
+
     /**
      * @param \WC_Product $product
      * @param string      $tax_mode  'include' | 'exclude'
@@ -83,16 +86,19 @@ class OtwFeed_Tax_Calculator {
 
     private static function get_tax_rates_for_country( \WC_Product $product, string $country ): array {
         $tax_class = $product->get_tax_class();
+        $cache_key = $country . '|' . $tax_class;
 
-        $args = array(
-            'country'   => $country,
-            'state'     => '',
-            'postcode'  => '',
-            'city'      => '',
-            'tax_class' => $tax_class,
-        );
+        if ( ! array_key_exists( $cache_key, self::$rate_cache ) ) {
+            self::$rate_cache[ $cache_key ] = \WC_Tax::find_rates( array(
+                'country'   => $country,
+                'state'     => '',
+                'postcode'  => '',
+                'city'      => '',
+                'tax_class' => $tax_class,
+            ) );
+        }
 
-        return \WC_Tax::find_rates( $args );
+        return self::$rate_cache[ $cache_key ];
     }
 
     public static function get_tax_rate_percentage( string $country, string $tax_class = '' ): float {

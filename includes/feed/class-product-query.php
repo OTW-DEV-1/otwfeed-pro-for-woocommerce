@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OtwFeed_Product_Query {
 
+    /** @var array<int,int[]> Static cache for get_ancestors() — persists across batches in the same PHP process. */
+    private static array $ancestors_cache = array();
+
     /**
      * Returns all published parent product IDs via a raw DB query.
      * Extremely lightweight — no WC_Product objects loaded.
@@ -403,6 +406,13 @@ class OtwFeed_Product_Query {
         );
     }
 
+    private static function get_ancestors_cached( int $term_id ): array {
+        if ( ! isset( self::$ancestors_cache[ $term_id ] ) ) {
+            self::$ancestors_cache[ $term_id ] = get_ancestors( $term_id, 'product_cat', 'taxonomy' );
+        }
+        return self::$ancestors_cache[ $term_id ];
+    }
+
     private static function get_top_level_category( array $term_ids ): string {
         if ( empty( $term_ids ) ) {
             return '';
@@ -412,7 +422,7 @@ class OtwFeed_Product_Query {
         $best_depth   = -1;
 
         foreach ( $term_ids as $term_id ) {
-            $depth = count( get_ancestors( $term_id, 'product_cat', 'taxonomy' ) );
+            $depth = count( self::get_ancestors_cached( $term_id ) );
             if ( $depth > $best_depth ) {
                 $best_depth   = $depth;
                 $best_term_id = $term_id;
@@ -423,7 +433,7 @@ class OtwFeed_Product_Query {
             return '';
         }
 
-        $ancestors = get_ancestors( $best_term_id, 'product_cat', 'taxonomy' );
+        $ancestors = self::get_ancestors_cached( $best_term_id );
         $root_id   = ! empty( $ancestors ) ? end( $ancestors ) : $best_term_id;
         $term      = get_term( $root_id, 'product_cat' );
 
@@ -445,8 +455,7 @@ class OtwFeed_Product_Query {
         $best_depth   = -1;
 
         foreach ( $term_ids as $term_id ) {
-            $ancestors = get_ancestors( $term_id, 'product_cat', 'taxonomy' );
-            $depth     = count( $ancestors );
+            $depth = count( self::get_ancestors_cached( $term_id ) );
             if ( $depth > $best_depth ) {
                 $best_depth   = $depth;
                 $best_term_id = $term_id;
@@ -457,7 +466,7 @@ class OtwFeed_Product_Query {
             return '';
         }
 
-        $ancestors   = array_reverse( get_ancestors( $best_term_id, 'product_cat', 'taxonomy' ) );
+        $ancestors   = array_reverse( self::get_ancestors_cached( $best_term_id ) );
         $ancestors[] = $best_term_id;
 
         $parts = array();

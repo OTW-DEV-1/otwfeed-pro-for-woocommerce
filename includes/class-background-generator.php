@@ -210,7 +210,7 @@ class OtwFeed_Background_Generator {
             unset( $products );
 
             // Yield to the server between batches to keep CPU from spiking to 100%.
-            usleep( 500000 ); // 0.5 s
+            usleep( 1500000 ); // 1.5 s
         }
 
         // Write closing tags.
