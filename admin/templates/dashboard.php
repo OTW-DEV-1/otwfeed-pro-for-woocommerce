@@ -12,7 +12,7 @@ $integration = OtwFeed_Currency_Manager::detect();
 // Collect any feeds whose background generation is currently in progress.
 $active_generations = array();
 foreach ( $feeds as $f ) {
-    $p = OtwFeed_Background_Generator::get_progress( $f->id );
+    $p = OtwFeed_Background_Generator::get_progress( (int) $f->id );
     if ( in_array( $p['status'], array( 'queued', 'running' ), true ) ) {
         $active_generations[ $f->id ] = $p;
     }
