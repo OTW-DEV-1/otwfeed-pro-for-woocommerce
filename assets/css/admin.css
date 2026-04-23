@@ -286,6 +286,34 @@ body.otwfeed-admin-page .notice-dismiss:hover::before {
   font-size: 12px;
 }
 
+/* ── Generation progress bar ───────────────────────────────────────────────── */
+.otwfeed-progress {
+  margin-top: 6px;
+  min-width: 140px;
+}
+
+.otwfeed-progress-track {
+  height: 6px;
+  background: var(--otwf-border, #2e3040);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.otwfeed-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--otwf-accent, #00a0d2);
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+.otwfeed-progress-label {
+  font-size: 11px;
+  color: var(--otwf-muted, #9ba5b4);
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
 /* ── Forms ─────────────────────────────────────────────────────────────────── */
 .otwfeed-wrap .form-control,
 .otwfeed-wrap .form-select {

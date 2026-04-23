@@ -425,31 +425,69 @@
     function initDashboard() {
         const $wrap = $('.otwfeed-wrap');
 
-        $wrap.on('click', '.otwfeed-btn-generate', function () {
+        $wrap.on('click', '.otwfeed-btn-generate', async function () {
             const $btn = $(this);
             const id   = $btn.data('id');
             if (!confirm(i18n.confirmRegen || 'Regenerate?')) return;
-            $btn.prop('disabled', true).text(i18n.generating || 'Generating…');
 
-            post('otwfeed_generate_feed', { id })
-                .done(function (res) {
-                    if (res.success) {
-                        const count = res.data && res.data.product_count != null ? res.data.product_count : '?';
-                        $btn.text((i18n.done || 'Done') + ' (' + count + ')');
-                        // Update last-generated cell in the same row.
-                        const now = new Date();
-                        const ts  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        $btn.closest('tr').find('td.text-muted.small').text(ts);
-                        setTimeout(() => $btn.prop('disabled', false).text('Generate'), 4000);
-                    } else {
-                        alert((res.data && res.data.message) || i18n.error || 'Error');
-                        $btn.prop('disabled', false).text('Generate');
-                    }
-                })
-                .fail(function () {
-                    alert(i18n.error || 'Error');
-                    $btn.prop('disabled', false).text('Generate');
-                });
+            $btn.prop('disabled', true);
+
+            // Build progress UI and insert below the buttons row.
+            const $td = $btn.closest('td');
+            const $progress = $(
+                '<div class="otwfeed-progress">' +
+                    '<div class="otwfeed-progress-track"><div class="otwfeed-progress-bar"></div></div>' +
+                    '<div class="otwfeed-progress-label">Starting…</div>' +
+                '</div>'
+            );
+            $td.append($progress);
+
+            const setProgress = (pct, label) => {
+                $progress.find('.otwfeed-progress-bar').css('width', pct + '%');
+                $progress.find('.otwfeed-progress-label').text(label);
+            };
+
+            const cleanup = (restoreLabel) => {
+                $progress.remove();
+                $btn.prop('disabled', false).text(restoreLabel || (i18n.generate || 'Generate'));
+            };
+
+            // 1. Start.
+            let startRes;
+            try { startRes = await post('otwfeed_generate_start', { id }).promise(); }
+            catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
+            if (!startRes.success) { alert((startRes.data && startRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+
+            const { total, batch_count } = startRes.data;
+            setProgress(0, '0 / ' + total);
+
+            // 2. Batches.
+            for (let i = 0; i < batch_count; i++) {
+                let batchRes;
+                try { batchRes = await post('otwfeed_generate_batch', { id, batch_index: i }).promise(); }
+                catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
+                if (!batchRes.success) { alert((batchRes.data && batchRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+
+                const { processed } = batchRes.data;
+                const pct = total > 0 ? Math.round((processed / total) * 100) : 100;
+                setProgress(pct, processed + ' / ' + total);
+            }
+
+            // 3. Finish.
+            let finRes;
+            try { finRes = await post('otwfeed_generate_finish', { id }).promise(); }
+            catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
+            if (!finRes.success) { alert((finRes.data && finRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+
+            const count = finRes.data && finRes.data.product_count != null ? finRes.data.product_count : '?';
+            setProgress(100, (i18n.done || 'Done') + ' — ' + count + ' products');
+
+            // Update last-generated timestamp.
+            const now = new Date();
+            const ts  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            $btn.closest('tr').find('td.text-muted.small').text(ts);
+
+            setTimeout(() => cleanup(), 3000);
         });
 
         $wrap.on('click', '.otwfeed-btn-delete', function () {

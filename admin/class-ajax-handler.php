@@ -20,6 +20,9 @@ class OtwFeed_Ajax_Handler {
             'otwfeed_save_feed',
             'otwfeed_delete_feed',
             'otwfeed_generate_feed',
+            'otwfeed_generate_start',
+            'otwfeed_generate_batch',
+            'otwfeed_generate_finish',
             'otwfeed_save_mappings',
             'otwfeed_save_filters',
             'otwfeed_get_feed',
@@ -105,6 +108,40 @@ class OtwFeed_Ajax_Handler {
         $id     = absint( $_POST['id'] ?? 0 );
         $result = OtwFeed_Feed_Generator::generate( $id );
 
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( array( 'message' => $result['error'] ) );
+        }
+    }
+
+    public function handle_generate_start(): void {
+        $this->check_nonce();
+        $id     = absint( $_POST['id'] ?? 0 );
+        $result = OtwFeed_Feed_Generator::generate_start( $id );
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( array( 'message' => $result['error'] ) );
+        }
+    }
+
+    public function handle_generate_batch(): void {
+        $this->check_nonce();
+        $id          = absint( $_POST['id'] ?? 0 );
+        $batch_index = absint( $_POST['batch_index'] ?? 0 );
+        $result      = OtwFeed_Feed_Generator::generate_batch( $id, $batch_index );
+        if ( $result['success'] ) {
+            wp_send_json_success( $result );
+        } else {
+            wp_send_json_error( array( 'message' => $result['error'] ) );
+        }
+    }
+
+    public function handle_generate_finish(): void {
+        $this->check_nonce();
+        $id     = absint( $_POST['id'] ?? 0 );
+        $result = OtwFeed_Feed_Generator::generate_finish( $id );
         if ( $result['success'] ) {
             wp_send_json_success( $result );
         } else {
