@@ -126,10 +126,10 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="otwfeed-skip-country-param" name="skip_country_param" value="1"
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <input class="form-check-input flex-shrink-0 m-0" type="checkbox" id="otwfeed-skip-country-param" name="skip_country_param" value="1"
                                     <?php checked( (int) ( $feed->skip_country_param ?? 0 ), 1 ); ?>>
-                                <label class="form-check-label text-muted small" for="otwfeed-skip-country-param">
+                                <label class="text-muted small mb-0" for="otwfeed-skip-country-param">
                                     <?php esc_html_e( "Don't add country parameter to URL", 'otwfeed-pro' ); ?>
                                 </label>
                             </div>
@@ -144,10 +144,10 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="otwfeed-skip-currency-param" name="skip_currency_param" value="1"
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <input class="form-check-input flex-shrink-0 m-0" type="checkbox" id="otwfeed-skip-currency-param" name="skip_currency_param" value="1"
                                     <?php checked( (int) ( $feed->skip_currency_param ?? 0 ), 1 ); ?>>
-                                <label class="form-check-label text-muted small" for="otwfeed-skip-currency-param">
+                                <label class="text-muted small mb-0" for="otwfeed-skip-currency-param">
                                     <?php esc_html_e( "Don't add currency parameter to URL", 'otwfeed-pro' ); ?>
                                 </label>
                             </div>
