@@ -43,6 +43,7 @@ class OtwFeed_Loader {
         require_once OTWFEED_DIR . 'includes/feed/class-feed-builder-google.php';
         require_once OTWFEED_DIR . 'includes/feed/class-feed-builder-facebook.php';
         require_once OTWFEED_DIR . 'includes/feed/class-feed-generator.php';
+        require_once OTWFEED_DIR . 'includes/class-background-generator.php';
 
         // REST.
         require_once OTWFEED_DIR . 'includes/api/class-rest-feeds.php';
@@ -90,6 +91,7 @@ class OtwFeed_Loader {
         add_action( 'rest_api_init', static function () {
             $controller = new OtwFeed_REST_Feeds();
             $controller->register_routes();
+            OtwFeed_Background_Generator::register_rest_route();
         } );
     }
 

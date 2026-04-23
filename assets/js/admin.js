@@ -423,77 +423,120 @@
     // ── Dashboard ─────────────────────────────────────────────────────────────
 
     function initDashboard() {
-        const $wrap = $('.otwfeed-wrap');
+        const $wrap      = $('.otwfeed-wrap');
+        const activePolls = {}; // feed_id → setInterval handle
 
-        $wrap.on('click', '.otwfeed-btn-generate', async function () {
-            const $btn = $(this);
-            const id   = $btn.data('id');
-            if (!confirm(i18n.confirmRegen || 'Regenerate?')) return;
+        // ── Progress bar helpers ──────────────────────────────────────────────
 
-            $btn.prop('disabled', true);
-
-            // Build progress UI and insert below the buttons row.
-            const $td = $btn.closest('td');
-            const $progress = $(
+        function makeProgressBar() {
+            return $(
                 '<div class="otwfeed-progress">' +
                     '<div class="otwfeed-progress-track"><div class="otwfeed-progress-bar"></div></div>' +
-                    '<div class="otwfeed-progress-label">Starting…</div>' +
+                    '<div class="otwfeed-progress-label"></div>' +
                 '</div>'
             );
-            $td.append($progress);
+        }
 
-            const setProgress = (pct, label) => {
-                $progress.find('.otwfeed-progress-bar').css('width', pct + '%');
-                $progress.find('.otwfeed-progress-label').text(label);
-            };
+        function setProgress($bar, pct, label, isError) {
+            $bar.find('.otwfeed-progress-bar').css('width', pct + '%');
+            $bar.find('.otwfeed-progress-label')
+                .text(label)
+                .toggleClass('otwfeed-progress-label--error', !!isError);
+        }
 
-            const cleanup = (restoreLabel) => {
-                $progress.remove();
-                $btn.prop('disabled', false).text(restoreLabel || (i18n.generate || 'Generate'));
-            };
+        function attachProgressBar($btn, initialLabel) {
+            const $bar = makeProgressBar();
+            $btn.closest('td').append($bar);
+            $btn.prop('disabled', true);
+            setProgress($bar, 0, initialLabel || (i18n.queued || 'Queued…'));
+            return $bar;
+        }
 
-            // 1. Start.
-            let startRes;
-            try { startRes = await post('otwfeed_generate_start', { id }).promise(); }
-            catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
-            if (!startRes.success) { alert((startRes.data && startRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+        function stopPolling(feedId, $btn, $bar, delay) {
+            clearInterval(activePolls[feedId]);
+            delete activePolls[feedId];
+            setTimeout(() => {
+                $bar.remove();
+                $btn.prop('disabled', false);
+            }, delay || 0);
+        }
 
-            const { total, batch_count } = startRes.data;
-            setProgress(0, '0 / ' + total);
+        // ── Core poller ───────────────────────────────────────────────────────
 
-            // 2. Batches.
-            for (let i = 0; i < batch_count; i++) {
-                let batchRes;
-                try { batchRes = await post('otwfeed_generate_batch', { id, batch_index: i }).promise(); }
-                catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
-                if (!batchRes.success) { alert((batchRes.data && batchRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+        function startPolling(feedId, $btn, $bar) {
+            if (activePolls[feedId]) clearInterval(activePolls[feedId]);
 
-                const { processed } = batchRes.data;
-                const pct = total > 0 ? Math.round((processed / total) * 100) : 100;
-                setProgress(pct, processed + ' / ' + total);
-            }
+            activePolls[feedId] = setInterval(function () {
+                post('otwfeed_get_progress', { id: feedId })
+                    .done(function (res) {
+                        if (!res.success) return;
+                        const p = res.data;
 
-            // 3. Finish.
-            let finRes;
-            try { finRes = await post('otwfeed_generate_finish', { id }).promise(); }
-            catch (e) { alert(i18n.error || 'Error'); cleanup(); return; }
-            if (!finRes.success) { alert((finRes.data && finRes.data.message) || i18n.error || 'Error'); cleanup(); return; }
+                        if (p.status === 'queued') {
+                            setProgress($bar, 0, i18n.queued || 'Queued…');
 
-            const count = finRes.data && finRes.data.product_count != null ? finRes.data.product_count : '?';
-            setProgress(100, (i18n.done || 'Done') + ' — ' + count + ' products');
+                        } else if (p.status === 'running') {
+                            const pct   = p.total > 0 ? Math.round((p.processed / p.total) * 100) : 0;
+                            const label = p.processed + ' / ' + p.total + ' (' + pct + '%)';
+                            setProgress($bar, pct, label);
 
-            // Update last-generated timestamp.
-            const now = new Date();
-            const ts  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            $btn.closest('tr').find('td.text-muted.small').text(ts);
+                        } else if (p.status === 'done') {
+                            setProgress($bar, 100, (i18n.done || 'Done') + ' — ' + p.products_written + ' products');
+                            const now = new Date();
+                            const ts  = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            $btn.closest('tr').find('td.text-muted.small').text(ts);
+                            stopPolling(feedId, $btn, $bar, 4000);
 
-            setTimeout(() => cleanup(), 3000);
+                        } else if (p.status === 'error') {
+                            setProgress($bar, 0, (i18n.error || 'Error') + (p.error ? ': ' + p.error : ''), true);
+                            stopPolling(feedId, $btn, $bar, 6000);
+
+                        } else {
+                            // idle or unknown — stop quietly
+                            stopPolling(feedId, $btn, $bar, 0);
+                        }
+                    });
+            }, 3000);
+        }
+
+        // ── Generate button ───────────────────────────────────────────────────
+
+        $wrap.on('click', '.otwfeed-btn-generate', function () {
+            const $btn  = $(this);
+            const id    = $btn.data('id');
+            if (!confirm(i18n.confirmRegen || 'Regenerate?')) return;
+
+            const $bar = attachProgressBar($btn, i18n.queued || 'Queued…');
+
+            post('otwfeed_generate_async', { id })
+                .done(function (res) {
+                    if (!res.success) {
+                        alert((res.data && res.data.message) || i18n.error || 'Error');
+                        $bar.remove();
+                        $btn.prop('disabled', false);
+                        return;
+                    }
+                    startPolling(id, $btn, $bar);
+                })
+                .fail(function () {
+                    alert(i18n.error || 'Error');
+                    $bar.remove();
+                    $btn.prop('disabled', false);
+                });
         });
+
+        // ── Delete button ─────────────────────────────────────────────────────
 
         $wrap.on('click', '.otwfeed-btn-delete', function () {
             const $btn = $(this);
             if (!confirm(i18n.confirmDelete || 'Delete?')) return;
-            post('otwfeed_delete_feed', { id: $btn.data('id') })
+            const id = $btn.data('id');
+            // Stop any running poll for this feed.
+            if (activePolls[id]) {
+                clearInterval(activePolls[id]);
+                delete activePolls[id];
+            }
+            post('otwfeed_delete_feed', { id })
                 .done(function (res) {
                     if (res.success) {
                         $btn.closest('tr').fadeOut(300, function () { $(this).remove(); });
@@ -502,6 +545,23 @@
                     }
                 });
         });
+
+        // ── Resume in-progress bars on page load ──────────────────────────────
+
+        if (window.otwfeedActiveGenerations) {
+            Object.entries(window.otwfeedActiveGenerations).forEach(function ([feedId, progress]) {
+                feedId = parseInt(feedId, 10);
+                const $btn = $wrap.find('.otwfeed-btn-generate[data-id="' + feedId + '"]');
+                if (!$btn.length) return;
+                const pct   = progress.total > 0 ? Math.round((progress.processed / progress.total) * 100) : 0;
+                const label = progress.status === 'queued'
+                    ? (i18n.queued || 'Queued…')
+                    : progress.processed + ' / ' + progress.total + ' (' + pct + '%)';
+                const $bar = attachProgressBar($btn, label);
+                setProgress($bar, pct, label);
+                startPolling(feedId, $btn, $bar);
+            });
+        }
     }
 
     // ── Wizard ────────────────────────────────────────────────────────────────

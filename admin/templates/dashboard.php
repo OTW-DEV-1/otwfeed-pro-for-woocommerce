@@ -4,11 +4,23 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-$feeds      = OtwFeed_DB_Feeds::get_all( array( 'limit' => 100 ) );
-$total      = OtwFeed_DB_Feeds::count();
-$active     = OtwFeed_DB_Feeds::count( array( 'status' => 'active' ) );
+$feeds       = OtwFeed_DB_Feeds::get_all( array( 'limit' => 100 ) );
+$total       = OtwFeed_DB_Feeds::count();
+$active      = OtwFeed_DB_Feeds::count( array( 'status' => 'active' ) );
 $integration = OtwFeed_Currency_Manager::detect();
+
+// Collect any feeds whose background generation is currently in progress.
+$active_generations = array();
+foreach ( $feeds as $f ) {
+    $p = OtwFeed_Background_Generator::get_progress( $f->id );
+    if ( in_array( $p['status'], array( 'queued', 'running' ), true ) ) {
+        $active_generations[ $f->id ] = $p;
+    }
+}
 ?>
+<?php if ( ! empty( $active_generations ) ) : ?>
+<script>window.otwfeedActiveGenerations = <?php echo wp_json_encode( $active_generations ); ?>;</script>
+<?php endif; ?>
 <div class="otwfeed-wrap wrap">
 
     <div class="otwfeed-header">

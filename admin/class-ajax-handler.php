@@ -23,6 +23,8 @@ class OtwFeed_Ajax_Handler {
             'otwfeed_generate_start',
             'otwfeed_generate_batch',
             'otwfeed_generate_finish',
+            'otwfeed_generate_async',
+            'otwfeed_get_progress',
             'otwfeed_save_mappings',
             'otwfeed_save_filters',
             'otwfeed_get_feed',
@@ -147,6 +149,19 @@ class OtwFeed_Ajax_Handler {
         } else {
             wp_send_json_error( array( 'message' => $result['error'] ) );
         }
+    }
+
+    public function handle_generate_async(): void {
+        $this->check_nonce();
+        $id     = absint( $_POST['id'] ?? 0 );
+        $result = OtwFeed_Background_Generator::schedule( $id );
+        wp_send_json_success( $result );
+    }
+
+    public function handle_get_progress(): void {
+        $this->check_nonce();
+        $id = absint( $_POST['id'] ?? 0 );
+        wp_send_json_success( OtwFeed_Background_Generator::get_progress( $id ) );
     }
 
     public function handle_save_mappings(): void {

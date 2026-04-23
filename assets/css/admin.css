@@ -314,6 +314,10 @@ body.otwfeed-admin-page .notice-dismiss:hover::before {
   white-space: nowrap;
 }
 
+.otwfeed-progress-label--error {
+  color: #e74c3c;
+}
+
 /* ── Forms ─────────────────────────────────────────────────────────────────── */
 .otwfeed-wrap .form-control,
 .otwfeed-wrap .form-select {
