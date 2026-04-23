@@ -724,9 +724,10 @@
                         return;
                     }
                     setStatus($status, res.data.message, 'success');
-                    setTimeout(function () {
+                    // Kick off background generation immediately, then go to dashboard.
+                    post('otwfeed_generate_async', { id: feedId }).always(function () {
                         window.location.href = ajaxUrl.replace('admin-ajax.php', '') + 'admin.php?page=otwfeed-pro';
-                    }, 1200);
+                    });
                 }).fail(function (xhr) {
                     setStatus($status, 'Server error ' + xhr.status + ': ' + (xhr.responseText || xhr.statusText), 'error');
                 });
