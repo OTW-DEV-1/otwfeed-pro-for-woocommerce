@@ -6,15 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Builds a Google Merchant Center RSS 2.0 XML feed.
+ *
+ * Uses direct string concatenation instead of DOMDocument to minimise
+ * per-item CPU and memory overhead on large catalogs.
  */
 class OtwFeed_Feed_Builder_Google {
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
-    /**
-     * Returns the XML preamble: declaration + <rss> + <channel> header elements.
-     * Written once at the start of the file.
-     */
     public static function build_preamble( object $feed ): string {
         $name = esc_xml( get_bloginfo( 'name' ) );
         $url  = esc_xml( get_site_url() );
@@ -28,37 +27,23 @@ class OtwFeed_Feed_Builder_Google {
              . "<description>{$desc}</description>\n";
     }
 
-    /**
-     * Returns the XML epilogue: closing </channel></rss>.
-     * Written once at the end of the file.
-     */
     public static function build_epilogue(): string {
         return '</channel>' . "\n" . '</rss>';
     }
 
     /**
-     * Builds and returns the XML string for a set of products (items only, no wrapper).
-     * Called once per batch during streaming generation.
-     *
-     * @param object     $feed
-     * @param object[]   $mappings
+     * @param object        $feed
+     * @param object[]      $mappings
      * @param \WC_Product[] $products
      */
     public static function build_items_xml( object $feed, array $mappings, array $products ): string {
         $xml = '';
         foreach ( $products as $product ) {
-            $doc  = new \DOMDocument( '1.0', 'UTF-8' );
-            $item = $doc->createElement( 'item' );
-            $doc->appendChild( $item );
-            self::build_item( $doc, $item, $product, $feed, $mappings );
-            $xml .= $doc->saveXML( $item ) . "\n";
+            $xml .= "<item>\n" . self::build_item( $product, $feed, $mappings ) . "</item>\n";
         }
         return $xml;
     }
 
-    /**
-     * Full in-memory build (backward-compatible, used for small feeds / tests).
-     */
     public static function build( object $feed, array $mappings, array $products ): string {
         return self::build_preamble( $feed )
              . self::build_items_xml( $feed, $mappings, $products )
@@ -67,7 +52,7 @@ class OtwFeed_Feed_Builder_Google {
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
-    private static function build_item( \DOMDocument $doc, \DOMElement $item, \WC_Product $product, object $feed, array $mappings ): void {
+    private static function build_item( \WC_Product $product, object $feed, array $mappings ): string {
         $attrs = OtwFeed_Product_Query::get_product_attributes( $product );
 
         if ( empty( $feed->skip_currency_param ) ) {
@@ -106,37 +91,40 @@ class OtwFeed_Feed_Builder_Google {
             $attrs[ $meta_key ] = get_post_meta( $product->get_id(), $meta_key, true );
         }
 
+        $on_sale = ! empty( $prices['regular'] );
+        $xml     = '';
+
         foreach ( $mappings as $mapping ) {
+            // When on sale the price tag needs swapping — skip it here, add below.
+            if ( $on_sale && 'attribute' === ( $mapping->source_type ?? '' ) && 'price' === ( $mapping->source_key ?? '' ) ) {
+                continue;
+            }
             $value = self::resolve_value( $mapping, $attrs, $product );
             if ( '' === $value ) {
                 continue;
             }
-            self::append_text( $doc, $item, $mapping->channel_tag, $value, 'g:description' === $mapping->channel_tag );
+            $xml .= self::xml_tag( $mapping->channel_tag, $value, 'g:description' === $mapping->channel_tag );
         }
 
-        // Always append sale_price if the product is on sale.
-        if ( ! empty( $prices['regular'] ) ) {
-            self::append_text( $doc, $item, 'g:sale_price', $prices['price'] );
-            foreach ( $item->childNodes as $child ) {
-                if ( $child instanceof \DOMElement && 'g:price' === $child->tagName ) {
-                    $item->removeChild( $child );
-                    break;
-                }
-            }
-            self::append_text( $doc, $item, 'g:price', $prices['regular'] );
+        if ( $on_sale ) {
+            // Google wants g:price = regular (crossed-out) and g:sale_price = actual price.
+            $xml .= self::xml_tag( 'g:sale_price', $prices['price'] );
+            $xml .= self::xml_tag( 'g:price',      $prices['regular'] );
         }
 
         if ( ! empty( $attrs['google_product_category'] ) ) {
-            self::append_text( $doc, $item, 'g:google_product_category', $attrs['google_product_category'] );
+            $xml .= self::xml_tag( 'g:google_product_category', (string) $attrs['google_product_category'] );
         }
 
         if ( (int) ( $feed->include_gallery_images ?? 1 ) ) {
             foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
                 if ( ! empty( $extra_image ) ) {
-                    self::append_text( $doc, $item, 'g:additional_image_link', (string) $extra_image );
+                    $xml .= self::xml_tag( 'g:additional_image_link', (string) $extra_image );
                 }
             }
         }
+
+        return $xml;
     }
 
     private static function resolve_value( object $mapping, array $attrs, \WC_Product $product ): string {
@@ -156,13 +144,15 @@ class OtwFeed_Feed_Builder_Google {
         return '';
     }
 
-    private static function append_text( \DOMDocument $doc, \DOMElement $parent, string $tag, string $value, bool $force_cdata = false ): void {
-        $el = $doc->createElement( $tag );
+    /**
+     * Renders a single XML tag as a string.
+     * Uses CDATA when the value contains characters that would break XML,
+     * or when $force_cdata is true (e.g. description).
+     */
+    private static function xml_tag( string $tag, string $value, bool $force_cdata = false ): string {
         if ( $force_cdata || str_contains( $value, '&' ) || str_contains( $value, '<' ) || str_contains( $value, '>' ) ) {
-            $el->appendChild( $doc->createCDATASection( $value ) );
-        } else {
-            $el->appendChild( $doc->createTextNode( $value ) );
+            return "<{$tag}><![CDATA[{$value}]]></{$tag}>\n";
         }
-        $parent->appendChild( $el );
+        return "<{$tag}>" . htmlspecialchars( $value, ENT_XML1, 'UTF-8' ) . "</{$tag}>\n";
     }
 }

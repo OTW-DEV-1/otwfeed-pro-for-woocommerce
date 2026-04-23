@@ -6,6 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Builds a Facebook / Meta Product Catalog XML feed (RSS 2.0 compatible).
+ *
+ * Uses direct string concatenation instead of DOMDocument to minimise
+ * per-item CPU and memory overhead on large catalogs.
  */
 class OtwFeed_Feed_Builder_Facebook {
 
@@ -29,18 +32,14 @@ class OtwFeed_Feed_Builder_Facebook {
     }
 
     /**
-     * @param object     $feed
-     * @param object[]   $mappings
+     * @param object        $feed
+     * @param object[]      $mappings
      * @param \WC_Product[] $products
      */
     public static function build_items_xml( object $feed, array $mappings, array $products ): string {
         $xml = '';
         foreach ( $products as $product ) {
-            $doc  = new \DOMDocument( '1.0', 'UTF-8' );
-            $item = $doc->createElement( 'item' );
-            $doc->appendChild( $item );
-            self::build_item( $doc, $item, $product, $feed, $mappings );
-            $xml .= $doc->saveXML( $item ) . "\n";
+            $xml .= "<item>\n" . self::build_item( $product, $feed, $mappings ) . "</item>\n";
         }
         return $xml;
     }
@@ -53,7 +52,7 @@ class OtwFeed_Feed_Builder_Facebook {
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
-    private static function build_item( \DOMDocument $doc, \DOMElement $item, \WC_Product $product, object $feed, array $mappings ): void {
+    private static function build_item( \WC_Product $product, object $feed, array $mappings ): string {
         $attrs = OtwFeed_Product_Query::get_product_attributes( $product );
 
         if ( empty( $feed->skip_currency_param ) ) {
@@ -88,23 +87,26 @@ class OtwFeed_Feed_Builder_Facebook {
         $attrs['price']      = $prices['price'];
         $attrs['sale_price'] = $prices['regular'];
 
+        $xml = '';
         foreach ( $mappings as $mapping ) {
             $value = self::resolve_value( $mapping, $attrs, $product );
             if ( '' === $value ) {
                 continue;
             }
-            self::append_text( $doc, $item, $mapping->channel_tag, $value, 'description' === $mapping->channel_tag );
+            $xml .= self::xml_tag( $mapping->channel_tag, $value, 'description' === $mapping->channel_tag );
         }
 
         if ( ! empty( $prices['regular'] ) ) {
-            self::append_text( $doc, $item, 'sale_price', $prices['price'] );
+            $xml .= self::xml_tag( 'sale_price', $prices['price'] );
         }
 
         foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
             if ( ! empty( $extra_image ) ) {
-                self::append_text( $doc, $item, 'additional_image_link', (string) $extra_image );
+                $xml .= self::xml_tag( 'additional_image_link', (string) $extra_image );
             }
         }
+
+        return $xml;
     }
 
     private static function resolve_value( object $mapping, array $attrs, \WC_Product $product ): string {
@@ -124,13 +126,10 @@ class OtwFeed_Feed_Builder_Facebook {
         return '';
     }
 
-    private static function append_text( \DOMDocument $doc, \DOMElement $parent, string $tag, string $value, bool $force_cdata = false ): void {
-        $el = $doc->createElement( $tag );
+    private static function xml_tag( string $tag, string $value, bool $force_cdata = false ): string {
         if ( $force_cdata || str_contains( $value, '&' ) || str_contains( $value, '<' ) || str_contains( $value, '>' ) ) {
-            $el->appendChild( $doc->createCDATASection( $value ) );
-        } else {
-            $el->appendChild( $doc->createTextNode( $value ) );
+            return "<{$tag}><![CDATA[{$value}]]></{$tag}>\n";
         }
-        $parent->appendChild( $el );
+        return "<{$tag}>" . htmlspecialchars( $value, ENT_XML1, 'UTF-8' ) . "</{$tag}>\n";
     }
 }
