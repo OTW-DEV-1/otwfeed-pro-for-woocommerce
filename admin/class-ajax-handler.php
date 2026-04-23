@@ -46,12 +46,14 @@ class OtwFeed_Ajax_Handler {
         $data    = array(
             'title'             => sanitize_text_field( $_POST['title'] ?? '' ),
             'channel'           => sanitize_text_field( $_POST['channel'] ?? 'google' ),
-            'country'           => strtoupper( sanitize_text_field( $_POST['country'] ?? 'IT' ) ),
+            'country'           => strtoupper( sanitize_text_field( $_POST['country'] ?? '' ) ),
             'currency'          => strtoupper( sanitize_text_field( $_POST['currency'] ?? 'EUR' ) ),
             'tax_mode'          => sanitize_text_field( $_POST['tax_mode'] ?? 'include' ),
             'status'            => sanitize_text_field( $_POST['status'] ?? 'active' ),
             'expand_variations'      => absint( $_POST['expand_variations'] ?? 1 ),
             'include_gallery_images' => absint( $_POST['include_gallery_images'] ?? 1 ),
+            'skip_country_param'     => absint( $_POST['skip_country_param']     ?? 0 ),
+            'skip_currency_param'    => absint( $_POST['skip_currency_param']    ?? 0 ),
         );
 
         if ( empty( $data['title'] ) ) {

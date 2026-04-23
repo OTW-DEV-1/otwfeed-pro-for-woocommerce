@@ -38,16 +38,23 @@ class OtwFeed_Feed_Builder_Google {
 
     private static function build_item( \DOMDocument $doc, \DOMElement $item, \WC_Product $product, object $feed, array $mappings ): void {
         $attrs  = OtwFeed_Product_Query::get_product_attributes( $product );
-        $attrs['permalink']    = OtwFeed_Currency_Manager::get_currency_url( $attrs['permalink'],    $feed->currency );
-        $attrs['permalink']    = add_query_arg( array(
-            'wc-country'   => strtoupper( $feed->country ),
+        if ( empty( $feed->skip_currency_param ) ) {
+            $attrs['permalink']     = OtwFeed_Currency_Manager::get_currency_url( $attrs['permalink'],     $feed->currency );
+            $attrs['checkout_link'] = OtwFeed_Currency_Manager::get_currency_url( $attrs['checkout_link'], $feed->currency );
+        }
+        $utm = array(
             'utm_source'   => 'Google Shopping',
             'utm_medium'   => 'cpc',
             'utm_campaign' => $feed->title,
             'utm_term'     => 'otwfeed',
-        ), $attrs['permalink'] );
-        $attrs['checkout_link'] = OtwFeed_Currency_Manager::get_currency_url( $attrs['checkout_link'], $feed->currency );
-        $attrs['checkout_link'] = add_query_arg( 'wc-country', strtoupper( $feed->country ), $attrs['checkout_link'] );
+        );
+        if ( empty( $feed->skip_country_param ) && ! empty( $feed->country ) ) {
+            $utm = array_merge( array( 'wc-country' => strtoupper( $feed->country ) ), $utm );
+        }
+        $attrs['permalink'] = add_query_arg( $utm, $attrs['permalink'] );
+        if ( empty( $feed->skip_country_param ) && ! empty( $feed->country ) ) {
+            $attrs['checkout_link'] = add_query_arg( 'wc-country', strtoupper( $feed->country ), $attrs['checkout_link'] );
+        }
 
         $price_round = false;
         foreach ( $mappings as $m ) {

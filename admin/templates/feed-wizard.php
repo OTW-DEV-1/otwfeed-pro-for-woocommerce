@@ -118,13 +118,21 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                         <div class="col-md-4">
                             <label for="otwfeed-country" class="form-label"><?php esc_html_e( 'Target Country', 'otwfeed-pro' ); ?></label>
                             <select id="otwfeed-country" name="country" class="form-select otwfeed-select2">
+                                <option value="" <?php selected( $feed->country ?? '', '' ); ?>><?php esc_html_e( '— Global (no country) —', 'otwfeed-pro' ); ?></option>
                                 <?php foreach ( $countries as $code => $name ) : ?>
                                     <option value="<?php echo esc_attr( $code ); ?>"
-                                        <?php selected( $feed->country ?? 'IT', $code ); ?>>
+                                        <?php selected( $feed->country ?? '', $code ); ?>>
                                         <?php echo esc_html( $name ); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="otwfeed-skip-country-param" name="skip_country_param" value="1"
+                                    <?php checked( (int) ( $feed->skip_country_param ?? 0 ), 1 ); ?>>
+                                <label class="form-check-label text-muted small" for="otwfeed-skip-country-param">
+                                    <?php esc_html_e( "Don't add country parameter to URL", 'otwfeed-pro' ); ?>
+                                </label>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label for="otwfeed-currency" class="form-label"><?php esc_html_e( 'Currency', 'otwfeed-pro' ); ?></label>
@@ -136,6 +144,13 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="otwfeed-skip-currency-param" name="skip_currency_param" value="1"
+                                    <?php checked( (int) ( $feed->skip_currency_param ?? 0 ), 1 ); ?>>
+                                <label class="form-check-label text-muted small" for="otwfeed-skip-currency-param">
+                                    <?php esc_html_e( "Don't add currency parameter to URL", 'otwfeed-pro' ); ?>
+                                </label>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label for="otwfeed-tax-mode" class="form-label"><?php esc_html_e( 'Tax Mode', 'otwfeed-pro' ); ?></label>

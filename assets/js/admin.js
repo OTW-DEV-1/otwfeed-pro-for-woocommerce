@@ -565,9 +565,11 @@
                 status:                 $('#otwfeed-status').val(),
                 expand_variations:      $('#otwfeed-expand-variations').val(),
                 include_gallery_images: $('#otwfeed-include-gallery-images').val(),
-                country:                'IT',
+                country:                '',
                 currency:               'EUR',
                 tax_mode:               'include',
+                skip_country_param:     $('#otwfeed-skip-country-param').is(':checked') ? 1 : 0,
+                skip_currency_param:    $('#otwfeed-skip-currency-param').is(':checked') ? 1 : 0,
             })
             .done(function (res) {
                 if (res.success) {
@@ -601,6 +603,8 @@
                 country:                $('#otwfeed-country').val(),
                 currency:               $('#otwfeed-currency').val(),
                 tax_mode:               $('#otwfeed-tax-mode').val(),
+                skip_country_param:     $('#otwfeed-skip-country-param').is(':checked') ? 1 : 0,
+                skip_currency_param:    $('#otwfeed-skip-currency-param').is(':checked') ? 1 : 0,
             }).done(function (res) {
                 if (!res.success) {
                     setStatus($status, (res.data && res.data.message) || i18n.error, 'error');
