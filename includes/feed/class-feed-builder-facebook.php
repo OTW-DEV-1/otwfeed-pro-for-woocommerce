@@ -9,37 +9,58 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OtwFeed_Feed_Builder_Facebook {
 
-    public static function build( object $feed, array $mappings, array $products ): string {
-        $doc = new \DOMDocument( '1.0', 'UTF-8' );
-        $doc->formatOutput = false;
+    // ── Public API ─────────────────────────────────────────────────────────────
 
-        $rss = $doc->createElement( 'rss' );
-        $rss->setAttribute( 'version', '2.0' );
-        $rss->setAttribute( 'xmlns:c', 'http://base.google.com/ns/1.0' );
-        $doc->appendChild( $rss );
+    public static function build_preamble( object $feed ): string {
+        $name = esc_xml( get_bloginfo( 'name' ) );
+        $url  = esc_xml( get_site_url() );
+        $desc = esc_xml( get_bloginfo( 'description' ) );
 
-        $channel = $doc->createElement( 'channel' );
-        $rss->appendChild( $channel );
-
-        self::append_text( $doc, $channel, 'title', get_bloginfo( 'name' ) );
-        self::append_text( $doc, $channel, 'link', get_site_url() );
-        self::append_text( $doc, $channel, 'description', get_bloginfo( 'description' ) );
-
-        foreach ( $products as $product ) {
-            $item = $doc->createElement( 'item' );
-            $channel->appendChild( $item );
-            self::build_item( $doc, $item, $product, $feed, $mappings );
-        }
-
-        return $doc->saveXML() ?: '';
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+             . '<rss version="2.0" xmlns:c="http://base.google.com/ns/1.0">' . "\n"
+             . '<channel>' . "\n"
+             . "<title>{$name}</title>\n"
+             . "<link>{$url}</link>\n"
+             . "<description>{$desc}</description>\n";
     }
 
+    public static function build_epilogue(): string {
+        return '</channel>' . "\n" . '</rss>';
+    }
+
+    /**
+     * @param object     $feed
+     * @param object[]   $mappings
+     * @param \WC_Product[] $products
+     */
+    public static function build_items_xml( object $feed, array $mappings, array $products ): string {
+        $xml = '';
+        foreach ( $products as $product ) {
+            $doc  = new \DOMDocument( '1.0', 'UTF-8' );
+            $item = $doc->createElement( 'item' );
+            $doc->appendChild( $item );
+            self::build_item( $doc, $item, $product, $feed, $mappings );
+            $xml .= $doc->saveXML( $item ) . "\n";
+        }
+        return $xml;
+    }
+
+    public static function build( object $feed, array $mappings, array $products ): string {
+        return self::build_preamble( $feed )
+             . self::build_items_xml( $feed, $mappings, $products )
+             . self::build_epilogue();
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
     private static function build_item( \DOMDocument $doc, \DOMElement $item, \WC_Product $product, object $feed, array $mappings ): void {
-        $attrs  = OtwFeed_Product_Query::get_product_attributes( $product );
+        $attrs = OtwFeed_Product_Query::get_product_attributes( $product );
+
         if ( empty( $feed->skip_currency_param ) ) {
             $attrs['permalink']     = OtwFeed_Currency_Manager::get_currency_url( $attrs['permalink'],     $feed->currency );
             $attrs['checkout_link'] = OtwFeed_Currency_Manager::get_currency_url( $attrs['checkout_link'], $feed->currency );
         }
+
         $utm = array(
             'utm_source'   => 'Google Shopping',
             'utm_medium'   => 'cpc',
@@ -75,13 +96,11 @@ class OtwFeed_Feed_Builder_Facebook {
             self::append_text( $doc, $item, $mapping->channel_tag, $value, 'description' === $mapping->channel_tag );
         }
 
-        // sale_price as separate element when on sale.
         if ( ! empty( $prices['regular'] ) ) {
             self::append_text( $doc, $item, 'sale_price', $prices['price'] );
         }
 
-        // Additional images.
-        foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $idx => $extra_image ) {
+        foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
             if ( ! empty( $extra_image ) ) {
                 self::append_text( $doc, $item, 'additional_image_link', (string) $extra_image );
             }

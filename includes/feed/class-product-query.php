@@ -10,8 +10,115 @@ if ( ! defined( 'ABSPATH' ) ) {
 class OtwFeed_Product_Query {
 
     /**
-     * @param object   $feed    Feed row from DB.
-     * @param object[] $filters Filter rows from DB (new group-based schema).
+     * Returns all published parent product IDs via a raw DB query.
+     * Extremely lightweight — no WC_Product objects loaded.
+     *
+     * @return int[]
+     */
+    public static function get_parent_ids(): array {
+        global $wpdb;
+        return array_map( 'intval', $wpdb->get_col( // phpcs:ignore
+            "SELECT ID FROM {$wpdb->posts}
+             WHERE post_type = 'product' AND post_status = 'publish'
+             ORDER BY ID ASC"
+        ) );
+    }
+
+    /**
+     * Loads one batch of parent IDs, expands variations efficiently via a
+     * single bulk DB query (no wc_get_product() loop), applies filters,
+     * and returns the final product list for that batch.
+     *
+     * @param object   $feed
+     * @param object[] $filters
+     * @param int[]    $parent_ids
+     * @return \WC_Product[]
+     */
+    public static function get_products_for_batch( object $feed, array $filters, array $parent_ids ): array {
+        if ( empty( $parent_ids ) ) {
+            return array();
+        }
+
+        $ev = (int) ( $feed->expand_variations ?? 1 );
+
+        // Load parent products for this batch.
+        $parents = wc_get_products( array(
+            'include' => $parent_ids,
+            'limit'   => count( $parent_ids ),
+            'return'  => 'objects',
+            'status'  => 'publish',
+        ) );
+
+        $products     = array();
+        $variable_ids = array();
+
+        foreach ( $parents as $product ) {
+            if ( $product->is_type( 'variable' ) && $ev > 0 ) {
+                $variable_ids[] = $product->get_id();
+            } else {
+                $products[] = $product;
+            }
+        }
+
+        // Expand variable products using a single bulk variation ID query.
+        if ( ! empty( $variable_ids ) ) {
+            global $wpdb;
+            $placeholders  = implode( ',', array_fill( 0, count( $variable_ids ), '%d' ) );
+            $variation_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( // phpcs:ignore
+                "SELECT ID FROM {$wpdb->posts}
+                 WHERE post_type = 'product_variation' AND post_status = 'publish'
+                 AND post_parent IN ($placeholders)",
+                ...$variable_ids
+            ) ) );
+
+            if ( ! empty( $variation_ids ) ) {
+                $variations = wc_get_products( array(
+                    'include' => $variation_ids,
+                    'limit'   => count( $variation_ids ),
+                    'return'  => 'objects',
+                ) );
+
+                // Only keep purchasable variations that have a price.
+                $variations = array_values( array_filter(
+                    $variations,
+                    static fn( $v ) => $v->is_purchasable() && '' !== $v->get_price()
+                ) );
+
+                if ( 2 === $ev ) {
+                    // Keep only the lowest-price variation per parent.
+                    $by_parent = array();
+                    foreach ( $variations as $var ) {
+                        $pid   = $var->get_parent_id();
+                        $price = OtwFeed_Price_Calculator::get_price_float(
+                            $var,
+                            $feed->tax_mode,
+                            $feed->country,
+                            $feed->currency,
+                            false
+                        );
+                        if ( ! isset( $by_parent[ $pid ] ) || $price < $by_parent[ $pid ]['price'] ) {
+                            $by_parent[ $pid ] = array( 'var' => $var, 'price' => $price );
+                        }
+                    }
+                    foreach ( $by_parent as $entry ) {
+                        $products[] = $entry['var'];
+                    }
+                } else {
+                    // All variations.
+                    array_push( $products, ...$variations );
+                }
+            }
+        }
+
+        return empty( $filters ) ? $products : self::apply_filters( $products, $filters, $feed );
+    }
+
+    /**
+     * Legacy full-load method — kept for small-scale use (e.g. filter previews).
+     * For feed generation use get_parent_ids() + get_products_for_batch() instead.
+     *
+     * @param object   $feed
+     * @param object[] $filters
      * @return \WC_Product[]
      */
     public static function get_products( object $feed, array $filters ): array {
@@ -24,20 +131,25 @@ class OtwFeed_Product_Query {
         $query    = new \WC_Product_Query( $args );
         $products = $query->get_products();
 
-        // Expand variable products based on feed setting.
         $ev = (int) ( $feed->expand_variations ?? 1 );
         if ( 1 === $ev ) {
             $products = self::expand_variable_products( $products );
         } elseif ( 2 === $ev ) {
             $products = self::expand_lowest_price_variation( $products, $feed );
         }
-        // 0 = keep parent products only, no expansion.
 
-        if ( empty( $filters ) ) {
-            return array_values( $products );
-        }
+        return empty( $filters ) ? array_values( $products ) : self::apply_filters( $products, $filters, $feed );
+    }
 
-        // Group filters by group_id.
+    // ── Filter evaluation ──────────────────────────────────────────────────────
+
+    /**
+     * @param \WC_Product[] $products
+     * @param object[]      $filters
+     * @param object        $feed
+     * @return \WC_Product[]
+     */
+    private static function apply_filters( array $products, array $filters, object $feed ): array {
         $groups = array();
         foreach ( $filters as $filter ) {
             $gid = (int) $filter->group_id;
@@ -53,7 +165,6 @@ class OtwFeed_Product_Query {
         $include_groups = array_filter( $groups, static fn( $g ) => 'include' === $g['action'] );
         $exclude_groups = array_filter( $groups, static fn( $g ) => 'exclude' === $g['action'] );
 
-        // Include groups: only products matching at least one include group are kept.
         if ( ! empty( $include_groups ) ) {
             $kept = array();
             foreach ( $products as $product ) {
@@ -64,128 +175,100 @@ class OtwFeed_Product_Query {
                     }
                 }
             }
-            $products = $kept;
+            $products = array_values( $kept );
         }
 
-        // Exclude groups: remove products matching any exclude group.
         foreach ( $exclude_groups as $group ) {
-            $products = array_filter(
+            $products = array_values( array_filter(
                 $products,
                 static fn( $p ) => ! self::product_matches_group( $p, $group['conditions'], $feed )
-            );
+            ) );
         }
 
-        return array_values( $products );
+        return $products;
     }
 
     private static function product_matches_group( \WC_Product $product, array $conditions, object $feed ): bool {
         foreach ( $conditions as $cond ) {
             if ( ! self::evaluate_condition( $product, $cond, $feed ) ) {
-                return false; // AND logic: one false breaks the group.
+                return false;
             }
         }
         return true;
     }
 
     private static function evaluate_condition( \WC_Product $product, object $cond, object $feed ): bool {
-        $attr = $cond->attribute;
-        $op   = $cond->condition_op;
-        $cs   = (bool) ( $cond->case_sensitive ?? false );
+        $attribute = $cond->attribute ?? 'price';
+        $op        = $cond->condition_op ?? 'lt';
+        $expected  = (string) ( $cond->value ?? '' );
+        $cs        = (bool) ( $cond->case_sensitive ?? false );
 
-        // For variations, use parent for taxonomy lookups.
-        $lookup_id = $product->get_parent_id() ?: $product->get_id();
-
-        switch ( $attr ) {
+        switch ( $attribute ) {
             case 'price':
-                $actual = OtwFeed_Price_Calculator::get_price_float(
+                $actual = (string) OtwFeed_Price_Calculator::get_price_float(
                     $product,
                     $feed->tax_mode,
                     $feed->country,
-                    $feed->currency
+                    $feed->currency,
+                    false
                 );
                 break;
-            case 'regular_price':
-                $actual = (float) ( $product->get_regular_price() ?: 0 );
-                break;
-            case 'sale_price':
-                $actual = (float) ( $product->get_sale_price() ?: 0 );
-                break;
-            case 'sku':
-                $actual = $product->get_sku();
-                break;
-            case 'title':
-                $actual = $product->get_name();
-                break;
-            case 'description':
-                $actual = wp_strip_all_tags( $product->get_description() );
-                break;
-            case 'product_id':
-                $actual = (float) $product->get_id();
-                break;
+
             case 'stock_status':
                 $actual = $product->get_stock_status();
                 break;
-            case 'stock_quantity':
-                $actual = (float) ( $product->get_stock_quantity() ?? 0 );
+
+            case 'sku':
+                $actual = $product->get_sku();
                 break;
-            case 'product_type':
-                $actual = $product->get_type();
+
+            case 'name':
+                $actual = $product->get_name();
                 break;
+
             case 'category':
-                $terms  = wp_get_post_terms( $lookup_id, 'product_cat', array( 'fields' => 'names' ) );
-                $actual = is_wp_error( $terms ) ? '' : implode( ', ', $terms );
+                $terms  = get_the_terms( $product->get_id(), 'product_cat' );
+                $actual = is_array( $terms ) ? implode( ',', wp_list_pluck( $terms, 'name' ) ) : '';
                 break;
+
             case 'tag':
-                $terms  = wp_get_post_terms( $lookup_id, 'product_tag', array( 'fields' => 'names' ) );
-                $actual = is_wp_error( $terms ) ? '' : implode( ', ', $terms );
+                $terms  = get_the_terms( $product->get_id(), 'product_tag' );
+                $actual = is_array( $terms ) ? implode( ',', wp_list_pluck( $terms, 'name' ) ) : '';
                 break;
-            case 'weight':
-                $actual = (float) ( $product->get_weight() ?: 0 );
-                break;
+
             default:
-                if ( str_starts_with( $attr, 'meta:' ) ) {
-                    $actual = (string) get_post_meta( $product->get_id(), substr( $attr, 5 ), true );
-                } else {
-                    return true; // Unknown attribute → skip (don't filter).
-                }
+                $actual = (string) get_post_meta( $product->get_id(), $attribute, true );
+                break;
         }
 
-        return self::compare( $actual, $op, $cond->value, $cs );
+        return self::compare( $actual, $op, $expected, $cs );
     }
 
     private static function compare( mixed $actual, string $op, string $expected, bool $cs ): bool {
-        // Numeric comparisons.
-        if ( in_array( $op, array( 'gt', 'lt', 'gte', 'lte' ), true ) ) {
-            $a = (float) $actual;
-            $e = (float) $expected;
-            return match ( $op ) {
-                'gt'  => $a > $e,
-                'lt'  => $a < $e,
-                'gte' => $a >= $e,
-                'lte' => $a <= $e,
-            };
-        }
-
-        // Empty checks (value-independent).
-        if ( 'is_empty' === $op )     return '' === (string) $actual;
-        if ( 'is_not_empty' === $op ) return '' !== (string) $actual;
-
-        // String comparisons.
-        $a = (string) $actual;
-        $e = (string) $expected;
         if ( ! $cs ) {
-            $a = mb_strtolower( $a );
-            $e = mb_strtolower( $e );
+            $actual   = strtolower( (string) $actual );
+            $expected = strtolower( $expected );
         }
 
-        return match ( $op ) {
-            'equals'       => $a === $e,
-            'not_equals'   => $a !== $e,
-            'contains'     => str_contains( $a, $e ),
-            'not_contains' => ! str_contains( $a, $e ),
-            default        => true,
-        };
+        switch ( $op ) {
+            case 'eq':  return $actual === $expected;
+            case 'neq': return $actual !== $expected;
+            case 'lt':  return (float) $actual <  (float) $expected;
+            case 'lte': return (float) $actual <= (float) $expected;
+            case 'gt':  return (float) $actual >  (float) $expected;
+            case 'gte': return (float) $actual >= (float) $expected;
+            case 'contains':     return str_contains( $actual, $expected );
+            case 'not_contains': return ! str_contains( $actual, $expected );
+            case 'starts_with':  return str_starts_with( $actual, $expected );
+            case 'ends_with':    return str_ends_with( $actual, $expected );
+            case 'regex':
+                return (bool) @preg_match( '/' . $expected . '/i', $actual );
+        }
+
+        return false;
     }
+
+    // ── Legacy variation helpers (used by get_products()) ─────────────────────
 
     private static function expand_variable_products( array $products ): array {
         $expanded = array();
@@ -224,7 +307,8 @@ class OtwFeed_Product_Query {
                         $variation,
                         $feed->tax_mode,
                         $feed->country,
-                        $feed->currency
+                        $feed->currency,
+                        false
                     );
                     if ( $price < $best_price ) {
                         $best_price = $price;
@@ -243,6 +327,8 @@ class OtwFeed_Product_Query {
         return $expanded;
     }
 
+    // ── Product attribute builder ──────────────────────────────────────────────
+
     public static function get_product_attributes( \WC_Product $product ): array {
         $parent_id    = $product->get_parent_id() ?: $product->get_id();
         $parent       = $parent_id !== $product->get_id() ? wc_get_product( $parent_id ) : $product;
@@ -254,8 +340,8 @@ class OtwFeed_Product_Query {
         $extra_images = array_map( 'wp_get_attachment_url', array_slice( $gallery_ids, 0, 9 ) );
 
         // Category breadcrumb path — deepest category, ancestors first.
-        $category_ids          = wc_get_product_term_ids( $parent_id, 'product_cat' );
-        $product_type          = self::get_deepest_category_path( $category_ids );
+        $category_ids            = wc_get_product_term_ids( $parent_id, 'product_cat' );
+        $product_type            = self::get_deepest_category_path( $category_ids );
         $google_product_category = self::get_top_level_category( $category_ids );
 
         // Brand (check common attribute names and meta).
@@ -300,35 +386,28 @@ class OtwFeed_Product_Query {
         $description = trim( $description );
 
         return array(
-            'id'                => (string) $product->get_id(),
-            'name'              => $product->get_name(),
-            'description'       => $description,
-            'permalink'         => get_permalink( $parent_id ),
-            'image'             => $image_url ?: '',
-            'extra_images'      => $extra_images,
-            'sku'               => $product->get_sku(),
-            'availability'      => $availability,
-            'brand'             => $brand,
+            'id'                     => (string) $product->get_id(),
+            'name'                   => $product->get_name(),
+            'description'            => $description,
+            'permalink'              => get_permalink( $parent_id ),
+            'image'                  => $image_url ?: '',
+            'extra_images'           => $extra_images,
+            'sku'                    => $product->get_sku(),
+            'availability'           => $availability,
+            'brand'                  => $brand,
             'product_type'           => $product_type,
             'google_product_category' => $google_product_category,
-            'item_group_id'     => $item_group_id,
-            'checkout_link'     => $checkout_link,
-            'identifier_exists' => $identifier_exists,
+            'item_group_id'          => $item_group_id,
+            'checkout_link'          => $checkout_link,
+            'identifier_exists'      => $identifier_exists,
         );
     }
 
-    /**
-     * Finds the deepest (most specific) category from a set of term IDs
-     * and returns its full ancestor path, e.g. "Home > Judaica > Candlesticks".
-     *
-     * @param int[] $term_ids
-     */
     private static function get_top_level_category( array $term_ids ): string {
         if ( empty( $term_ids ) ) {
             return '';
         }
 
-        // Pick the deepest assigned category, then walk up to its root ancestor.
         $best_term_id = 0;
         $best_depth   = -1;
 
@@ -351,6 +430,12 @@ class OtwFeed_Product_Query {
         return ( $term && ! is_wp_error( $term ) ) ? $term->name : '';
     }
 
+    /**
+     * Finds the deepest (most specific) category from a set of term IDs
+     * and returns its full ancestor path, e.g. "Home > Judaica > Candlesticks".
+     *
+     * @param int[] $term_ids
+     */
     private static function get_deepest_category_path( array $term_ids ): string {
         if ( empty( $term_ids ) ) {
             return '';

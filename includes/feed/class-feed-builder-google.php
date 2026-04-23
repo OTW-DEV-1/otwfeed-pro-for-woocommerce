@@ -9,39 +9,72 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OtwFeed_Feed_Builder_Google {
 
-    public static function build( object $feed, array $mappings, array $products ): string {
-        $doc  = new \DOMDocument( '1.0', 'UTF-8' );
-        $doc->formatOutput = false;
+    // ── Public API ─────────────────────────────────────────────────────────────
 
-        $rss = $doc->createElement( 'rss' );
-        $rss->setAttribute( 'version', '2.0' );
-        $rss->setAttribute( 'xmlns:g', 'http://base.google.com/ns/1.0' );
-        $doc->appendChild( $rss );
+    /**
+     * Returns the XML preamble: declaration + <rss> + <channel> header elements.
+     * Written once at the start of the file.
+     */
+    public static function build_preamble( object $feed ): string {
+        $name = esc_xml( get_bloginfo( 'name' ) );
+        $url  = esc_xml( get_site_url() );
+        $desc = esc_xml( get_bloginfo( 'description' ) );
 
-        $channel = $doc->createElement( 'channel' );
-        $rss->appendChild( $channel );
-
-        $site_name = get_bloginfo( 'name' );
-        self::append_text( $doc, $channel, 'title', $site_name );
-        self::append_text( $doc, $channel, 'link',  get_site_url() );
-        self::append_text( $doc, $channel, 'description', get_bloginfo( 'description' ) );
-
-        foreach ( $products as $product ) {
-            $item = $doc->createElement( 'item' );
-            $channel->appendChild( $item );
-
-            self::build_item( $doc, $item, $product, $feed, $mappings );
-        }
-
-        return $doc->saveXML() ?: '';
+        return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">' . "\n"
+             . '<channel>' . "\n"
+             . "<title>{$name}</title>\n"
+             . "<link>{$url}</link>\n"
+             . "<description>{$desc}</description>\n";
     }
 
+    /**
+     * Returns the XML epilogue: closing </channel></rss>.
+     * Written once at the end of the file.
+     */
+    public static function build_epilogue(): string {
+        return '</channel>' . "\n" . '</rss>';
+    }
+
+    /**
+     * Builds and returns the XML string for a set of products (items only, no wrapper).
+     * Called once per batch during streaming generation.
+     *
+     * @param object     $feed
+     * @param object[]   $mappings
+     * @param \WC_Product[] $products
+     */
+    public static function build_items_xml( object $feed, array $mappings, array $products ): string {
+        $xml = '';
+        foreach ( $products as $product ) {
+            $doc  = new \DOMDocument( '1.0', 'UTF-8' );
+            $item = $doc->createElement( 'item' );
+            $doc->appendChild( $item );
+            self::build_item( $doc, $item, $product, $feed, $mappings );
+            $xml .= $doc->saveXML( $item ) . "\n";
+        }
+        return $xml;
+    }
+
+    /**
+     * Full in-memory build (backward-compatible, used for small feeds / tests).
+     */
+    public static function build( object $feed, array $mappings, array $products ): string {
+        return self::build_preamble( $feed )
+             . self::build_items_xml( $feed, $mappings, $products )
+             . self::build_epilogue();
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
     private static function build_item( \DOMDocument $doc, \DOMElement $item, \WC_Product $product, object $feed, array $mappings ): void {
-        $attrs  = OtwFeed_Product_Query::get_product_attributes( $product );
+        $attrs = OtwFeed_Product_Query::get_product_attributes( $product );
+
         if ( empty( $feed->skip_currency_param ) ) {
             $attrs['permalink']     = OtwFeed_Currency_Manager::get_currency_url( $attrs['permalink'],     $feed->currency );
             $attrs['checkout_link'] = OtwFeed_Currency_Manager::get_currency_url( $attrs['checkout_link'], $feed->currency );
         }
+
         $utm = array(
             'utm_source'   => 'Google Shopping',
             'utm_medium'   => 'cpc',
@@ -66,20 +99,15 @@ class OtwFeed_Feed_Builder_Google {
 
         $prices = OtwFeed_Price_Calculator::get_price_pair( $product, $feed->tax_mode, $feed->country, $feed->currency, $price_round );
 
-        $attrs['price']         = $prices['price'];
-        $attrs['sale_price']    = $prices['regular'];
+        $attrs['price']      = $prices['price'];
+        $attrs['sale_price'] = $prices['regular'];
 
-        // Resolve meta values.
         foreach ( array( '_gtin', '_mpn', '_google_category' ) as $meta_key ) {
-            $attr_key = ltrim( $meta_key, '_' );
             $attrs[ $meta_key ] = get_post_meta( $product->get_id(), $meta_key, true );
         }
 
         foreach ( $mappings as $mapping ) {
             $value = self::resolve_value( $mapping, $attrs, $product );
-            if ( '' === $value && '' === ( $mapping->static_val ?? '' ) ) {
-                continue;
-            }
             if ( '' === $value ) {
                 continue;
             }
@@ -89,7 +117,6 @@ class OtwFeed_Feed_Builder_Google {
         // Always append sale_price if the product is on sale.
         if ( ! empty( $prices['regular'] ) ) {
             self::append_text( $doc, $item, 'g:sale_price', $prices['price'] );
-            // Overwrite price with regular price.
             foreach ( $item->childNodes as $child ) {
                 if ( $child instanceof \DOMElement && 'g:price' === $child->tagName ) {
                     $item->removeChild( $child );
@@ -99,12 +126,10 @@ class OtwFeed_Feed_Builder_Google {
             self::append_text( $doc, $item, 'g:price', $prices['regular'] );
         }
 
-        // Top-level category as google_product_category.
         if ( ! empty( $attrs['google_product_category'] ) ) {
             self::append_text( $doc, $item, 'g:google_product_category', $attrs['google_product_category'] );
         }
 
-        // Additional images (only when the feed option is enabled).
         if ( (int) ( $feed->include_gallery_images ?? 1 ) ) {
             foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
                 if ( ! empty( $extra_image ) ) {
@@ -118,20 +143,16 @@ class OtwFeed_Feed_Builder_Google {
         if ( 'static' === $mapping->source_type ) {
             return $mapping->static_val ?? '';
         }
-
         if ( 'attribute' === $mapping->source_type ) {
             return (string) ( $attrs[ $mapping->source_key ] ?? '' );
         }
-
         if ( 'meta' === $mapping->source_type ) {
             return (string) get_post_meta( $product->get_id(), $mapping->source_key, true );
         }
-
         if ( 'taxonomy' === $mapping->source_type ) {
             $terms = wp_get_post_terms( $product->get_id(), $mapping->source_key, array( 'fields' => 'names' ) );
             return is_array( $terms ) ? implode( ', ', $terms ) : '';
         }
-
         return '';
     }
 
