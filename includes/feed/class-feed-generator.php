@@ -9,7 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OtwFeed_Feed_Generator {
 
-    private const BATCH_SIZE = 200;
+    private const BATCH_SIZE        = 200; // monolithic generate()
+    private const CLIENT_BATCH_SIZE = 20;  // client-driven generate_batch() — keeps each request under ~10 s
 
     public static function generate( int $feed_id ): array {
         $feed = OtwFeed_DB_Feeds::get( $feed_id );
@@ -162,8 +163,8 @@ class OtwFeed_Feed_Generator {
         return array(
             'success'     => true,
             'total'       => $total,
-            'batch_size'  => self::BATCH_SIZE,
-            'batch_count' => (int) ceil( $total / self::BATCH_SIZE ),
+            'batch_size'  => self::CLIENT_BATCH_SIZE,
+            'batch_count' => (int) ceil( $total / self::CLIENT_BATCH_SIZE ),
         );
     }
 
@@ -186,8 +187,8 @@ class OtwFeed_Feed_Generator {
             $mappings = array_map( static fn( $m ) => (object) $m, $mappings );
         }
 
-        $offset    = $batch_index * self::BATCH_SIZE;
-        $batch_ids = array_slice( $state['parent_ids'], $offset, self::BATCH_SIZE );
+        $offset    = $batch_index * self::CLIENT_BATCH_SIZE;
+        $batch_ids = array_slice( $state['parent_ids'], $offset, self::CLIENT_BATCH_SIZE );
 
         if ( ! empty( $batch_ids ) ) {
             $builder  = $state['builder'];
@@ -202,7 +203,7 @@ class OtwFeed_Feed_Generator {
             unset( $products );
         }
 
-        $processed = min( $offset + self::BATCH_SIZE, $state['total'] );
+        $processed = min( $offset + self::CLIENT_BATCH_SIZE, $state['total'] );
         $state['processed'] = $processed;
         set_transient( 'otwfeed_gen_' . $feed_id, $state, HOUR_IN_SECONDS );
 
