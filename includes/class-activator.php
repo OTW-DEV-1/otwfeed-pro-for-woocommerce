@@ -38,6 +38,7 @@ class OtwFeed_Activator {
             include_gallery_images TINYINT(1)      NOT NULL DEFAULT 1,
             skip_country_param     TINYINT(1)      NOT NULL DEFAULT 0,
             skip_currency_param    TINYINT(1)      NOT NULL DEFAULT 0,
+            product_count     INT UNSIGNED    NOT NULL DEFAULT 0,
             last_gen          DATETIME        DEFAULT NULL,
             file_path         VARCHAR(500)    NOT NULL DEFAULT '',
             created_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,

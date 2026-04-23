@@ -104,6 +104,7 @@ foreach ( $feeds as $f ) {
                                 <th scope="col"><?php esc_html_e( 'Tax Mode', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Status', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Last Generated', 'otwfeed-pro' ); ?></th>
+                                <th scope="col"><?php esc_html_e( 'Products', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Actions', 'otwfeed-pro' ); ?></th>
                             </tr>
                         </thead>
@@ -130,6 +131,12 @@ foreach ( $feeds as $f ) {
                                         <?php echo $feed->last_gen
                                             ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $feed->last_gen ) ) )
                                             : esc_html__( 'Never', 'otwfeed-pro' );
+                                        ?>
+                                    </td>
+                                    <td class="text-muted small otwfeed-product-count">
+                                        <?php echo ! empty( $feed->product_count )
+                                            ? esc_html( number_format_i18n( (int) $feed->product_count ) )
+                                            : '—';
                                         ?>
                                     </td>
                                     <td>

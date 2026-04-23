@@ -72,8 +72,9 @@ class OtwFeed_Feed_Generator {
             fclose( $fh ); // phpcs:ignore
 
             OtwFeed_DB_Feeds::update( $feed_id, array(
-                'last_gen'  => current_time( 'mysql' ),
-                'file_path' => $file_path,
+                'last_gen'      => current_time( 'mysql' ),
+                'file_path'     => $file_path,
+                'product_count' => $total_count,
             ) );
 
             OtwFeed_DB_Logs::info( $feed_id, sprintf(

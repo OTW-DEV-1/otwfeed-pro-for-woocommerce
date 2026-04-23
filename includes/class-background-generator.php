@@ -214,8 +214,9 @@ class OtwFeed_Background_Generator {
         file_put_contents( $file_path, $builder::build_epilogue(), FILE_APPEND ); // phpcs:ignore
 
         OtwFeed_DB_Feeds::update( $feed_id, array(
-            'last_gen'  => current_time( 'mysql' ),
-            'file_path' => $file_path,
+            'last_gen'      => current_time( 'mysql' ),
+            'file_path'     => $file_path,
+            'product_count' => $products_written,
         ) );
 
         OtwFeed_DB_Logs::info( $feed_id, sprintf(

@@ -26,7 +26,7 @@ define( 'OTWFEED_FILE',     __FILE__ );
 define( 'OTWFEED_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'OTWFEED_URL',      plugin_dir_url( __FILE__ ) );
 define( 'OTWFEED_SLUG',     'otwfeed-pro' );
-define( 'OTWFEED_DB_VER',   6 );
+define( 'OTWFEED_DB_VER',   7 );
 
 // WooCommerce HPOS compatibility declaration.
 add_action( 'before_woocommerce_init', static function () {
