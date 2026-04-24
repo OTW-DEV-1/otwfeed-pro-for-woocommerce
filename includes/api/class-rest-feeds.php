@@ -68,10 +68,17 @@ class OtwFeed_REST_Feeds extends \WP_REST_Controller {
             $feed = OtwFeed_DB_Feeds::get( (int) $feed->id );
         }
 
+        // Discard any buffered output (WP debug notices, plugin hooks) so nothing
+        // gets appended before or after the XML content.
+        while ( ob_get_level() ) {
+            ob_end_clean();
+        }
+
         header( 'Content-Type: application/xml; charset=utf-8' );
         header( 'Cache-Control: public, max-age=3600' );
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-        echo file_get_contents( $feed->file_path );
+        header( 'Content-Length: ' . filesize( $feed->file_path ) );
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_readfile
+        readfile( $feed->file_path );
         exit;
     }
 

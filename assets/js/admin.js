@@ -612,11 +612,16 @@
 
         $('#otwfeed-next').on('click', function () {
             if (currentStep === 1) {
-                saveBasicInfo(function () { currentStep++; showStep(currentStep); });
-            } else {
-                currentStep = Math.min(currentStep + 1, totalSteps);
-                showStep(currentStep);
+                const title = $.trim($('#otwfeed-title').val());
+                if (!title) {
+                    setStatus($('#otwfeed-save-status'), i18n.titleRequired || 'Feed title is required.', 'error');
+                    $('#otwfeed-title').focus();
+                    return;
+                }
+                setStatus($('#otwfeed-save-status'), '', '');
             }
+            currentStep = Math.min(currentStep + 1, totalSteps);
+            showStep(currentStep);
         });
 
         $('#otwfeed-prev').on('click', function () {
@@ -644,45 +649,6 @@
 
         // source_type change on wizard.
         bindSourceTypeChange($form);
-
-        function saveBasicInfo(cb) {
-            const $status = $('#otwfeed-save-status');
-            const title   = $.trim($('#otwfeed-title').val());
-
-            if (!title) {
-                setStatus($status, 'Feed title is required.', 'error');
-                $('#otwfeed-title').focus();
-                return;
-            }
-
-            setStatus($status, '…', '');
-            post('otwfeed_save_feed', {
-                id:                savedFeedId,
-                title:             title,
-                channel:                $('#otwfeed-channel').val(),
-                status:                 $('#otwfeed-status').val(),
-                expand_variations:      $('#otwfeed-expand-variations').val(),
-                include_gallery_images: $('#otwfeed-include-gallery-images').val(),
-                country:                '',
-                currency:               'EUR',
-                tax_mode:               'include',
-                skip_country_param:     $('#otwfeed-skip-country-param').is(':checked') ? 1 : 0,
-                skip_currency_param:    $('#otwfeed-skip-currency-param').is(':checked') ? 1 : 0,
-            })
-            .done(function (res) {
-                if (res.success) {
-                    savedFeedId = res.data.id;
-                    $('#otwfeed-feed-id').val(savedFeedId);
-                    setStatus($status, res.data.message, 'success');
-                    if (typeof cb === 'function') cb();
-                } else {
-                    setStatus($status, (res.data && res.data.message) || i18n.error || 'Error', 'error');
-                }
-            })
-            .fail(function (xhr) {
-                setStatus($status, 'Server error ' + xhr.status + ': ' + (xhr.responseText || xhr.statusText), 'error');
-            });
-        }
 
         function saveFeedComplete() {
             const $status  = $('#otwfeed-save-status');

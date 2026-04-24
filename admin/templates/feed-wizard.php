@@ -97,7 +97,7 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                             <label class="form-label"><?php esc_html_e( 'Feed URL', 'otwfeed-pro' ); ?></label>
                             <div class="input-group">
                                 <input type="text" class="form-control otwfeed-feed-url-input" readonly
-                                       value="<?php echo esc_attr( OtwFeed_Feed_Generator::get_feed_url( $feed->token ) ); ?>"
+                                       value="<?php echo esc_attr( OtwFeed_Feed_Generator::get_feed_url( $feed->token, (int) $feed->id ) ); ?>"
                                        aria-label="<?php esc_attr_e( 'Feed URL', 'otwfeed-pro' ); ?>">
                                 <button type="button" class="btn btn-outline-secondary otwfeed-copy-url">
                                     <?php esc_html_e( 'Copy', 'otwfeed-pro' ); ?>

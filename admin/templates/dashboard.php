@@ -153,7 +153,7 @@ foreach ( $feeds as $f ) {
                                                 <?php esc_html_e( 'Generate', 'otwfeed-pro' ); ?>
                                             </button>
                                             <?php if ( ! empty( $feed->token ) ) : ?>
-                                                <a href="<?php echo esc_url( OtwFeed_Feed_Generator::get_feed_url( $feed->token ) ); ?>"
+                                                <a href="<?php echo esc_url( OtwFeed_Feed_Generator::get_feed_url( $feed->token, (int) $feed->id ) ); ?>"
                                                    target="_blank"
                                                    rel="noopener noreferrer"
                                                    class="btn btn-xs btn-outline-secondary"

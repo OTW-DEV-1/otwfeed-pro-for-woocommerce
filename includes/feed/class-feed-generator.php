@@ -87,7 +87,7 @@ class OtwFeed_Feed_Generator {
                 'success'       => true,
                 'product_count' => $total_count,
                 'file_path'     => $file_path,
-                'feed_url'      => self::get_feed_url( $feed->token ),
+                'feed_url'      => self::get_feed_url( $feed->token, (int) $feed->id ),
             );
 
         } catch ( \Throwable $e ) {
@@ -120,7 +120,22 @@ class OtwFeed_Feed_Generator {
         }
     }
 
-    public static function get_feed_url( string $token ): string {
+    /**
+     * Returns the public URL for a feed's static XML file.
+     * Pass $feed_id when available to avoid the DB lookup.
+     */
+    public static function get_feed_url( string $token, int $feed_id = 0 ): string {
+        if ( ! $feed_id ) {
+            $feed = OtwFeed_DB_Feeds::get_by_token( $token );
+            $feed_id = $feed ? (int) $feed->id : 0;
+        }
+        if ( $feed_id ) {
+            $upload    = wp_upload_dir();
+            $dir_url   = trailingslashit( $upload['baseurl'] ) . 'otwfeed-pro/';
+            $file_name = 'feed-' . $feed_id . '-' . sanitize_file_name( $token ) . '.xml';
+            return $dir_url . $file_name;
+        }
+        // Fallback to REST endpoint if feed ID is unknown.
         return rest_url( 'otwfeed-pro/v1/feed/' . rawurlencode( $token ) );
     }
 
@@ -243,7 +258,7 @@ class OtwFeed_Feed_Generator {
             'success'       => true,
             'product_count' => $count,
             'file_path'     => $state['file_path'],
-            'feed_url'      => self::get_feed_url( $feed->token ),
+            'feed_url'      => self::get_feed_url( $feed->token, (int) $feed->id ),
         );
     }
 }

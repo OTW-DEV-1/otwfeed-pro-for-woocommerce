@@ -13,18 +13,41 @@ class OtwFeed_Product_Query {
     private static array $ancestors_cache = array();
 
     /**
-     * Returns all published parent product IDs via a raw DB query.
+     * Returns the total number of published parent products.
+     */
+    public static function get_parent_count(): int {
+        global $wpdb;
+        return (int) $wpdb->get_var( // phpcs:ignore
+            "SELECT COUNT(ID) FROM {$wpdb->posts}
+             WHERE post_type = 'product' AND post_status = 'publish'"
+        );
+    }
+
+    /**
+     * Returns published parent product IDs, optionally paginated.
      * Extremely lightweight — no WC_Product objects loaded.
      *
+     * @param int $offset 0-based start position (default: 0 = all)
+     * @param int $limit  Max IDs to return; -1 = no limit
      * @return int[]
      */
-    public static function get_parent_ids(): array {
+    public static function get_parent_ids( int $offset = 0, int $limit = -1 ): array {
         global $wpdb;
-        return array_map( 'intval', $wpdb->get_col( // phpcs:ignore
-            "SELECT ID FROM {$wpdb->posts}
-             WHERE post_type = 'product' AND post_status = 'publish'
-             ORDER BY ID ASC"
-        ) );
+        if ( $limit > 0 ) {
+            $sql = $wpdb->prepare( // phpcs:ignore
+                "SELECT ID FROM {$wpdb->posts}
+                 WHERE post_type = 'product' AND post_status = 'publish'
+                 ORDER BY ID ASC
+                 LIMIT %d OFFSET %d",
+                $limit,
+                $offset
+            );
+        } else {
+            $sql = "SELECT ID FROM {$wpdb->posts}
+                    WHERE post_type = 'product' AND post_status = 'publish'
+                    ORDER BY ID ASC";
+        }
+        return array_map( 'intval', $wpdb->get_col( $sql ) ); // phpcs:ignore
     }
 
     /**
@@ -79,6 +102,7 @@ class OtwFeed_Product_Query {
                     'include' => $variation_ids,
                     'limit'   => count( $variation_ids ),
                     'return'  => 'objects',
+                    'type'    => 'variation',
                 ) );
 
                 // Only keep purchasable variations that have a price.
@@ -88,9 +112,11 @@ class OtwFeed_Product_Query {
                 ) );
 
                 if ( 2 === $ev ) {
-                    // Keep only the lowest-price variation per parent.
+                    // Filter variations first so the cheapest valid variation wins,
+                    // not the cheapest overall (which might be below a price filter).
+                    $eligible = empty( $filters ) ? $variations : self::apply_filters( $variations, $filters, $feed );
                     $by_parent = array();
-                    foreach ( $variations as $var ) {
+                    foreach ( $eligible as $var ) {
                         $pid   = $var->get_parent_id();
                         $price = OtwFeed_Price_Calculator::get_price_float(
                             $var,
@@ -106,6 +132,8 @@ class OtwFeed_Product_Query {
                     foreach ( $by_parent as $entry ) {
                         $products[] = $entry['var'];
                     }
+                    // Variations already filtered — only run filters on simple products.
+                    return empty( $filters ) ? $products : self::apply_filters( $products, $filters, $feed );
                 } else {
                     // All variations.
                     array_push( $products, ...$variations );

@@ -255,7 +255,7 @@ class OtwFeed_Ajax_Handler {
         $feed->mappings = OtwFeed_DB_Mappings::get_for_feed( $id );
         $feed->filters  = OtwFeed_DB_Filters::get_for_feed( $id );
         $feed->logs     = OtwFeed_DB_Logs::get_for_feed( $id, 20 );
-        $feed->feed_url = OtwFeed_Feed_Generator::get_feed_url( $feed->token );
+        $feed->feed_url = OtwFeed_Feed_Generator::get_feed_url( $feed->token, (int) $feed->id );
 
         wp_send_json_success( $feed );
     }

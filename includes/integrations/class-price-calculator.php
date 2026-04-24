@@ -37,18 +37,36 @@ class OtwFeed_Price_Calculator {
     }
 
     /**
-     * Returns both price and sale price (when on sale), for feed output.
+     * Returns both price and regular price (when genuinely on sale), for feed output.
+     * 'regular' is only populated when regular > price — guards against variable
+     * products whose _min_variation_regular_price meta is 0 or missing.
      */
     public static function get_price_pair( \WC_Product $product, string $tax_mode, string $country, string $currency, bool $round = false ): array {
-        $price   = self::get_price( $product, $tax_mode, $country, $currency, $round );
+        $price_float = OtwFeed_Tax_Calculator::get_price( $product, $tax_mode, $country );
+        $price_float = OtwFeed_Currency_Manager::convert( $price_float, $currency );
+
         $regular = '';
 
         if ( $product->is_on_sale() ) {
-            $regular = self::get_regular_price( $product, $tax_mode, $country, $currency, $round );
+            $reg_float = OtwFeed_Tax_Calculator::get_regular_price( $product, $tax_mode, $country );
+            $reg_float = OtwFeed_Currency_Manager::convert( $reg_float, $currency );
+
+            // Only treat as on-sale when the regular price is genuinely above the
+            // current price (avoids 0.00 regular from empty _min_variation_regular_price).
+            if ( $reg_float > $price_float ) {
+                if ( $round ) {
+                    $reg_float = (float) round( $reg_float );
+                }
+                $regular = OtwFeed_Currency_Manager::format_price( $reg_float, $currency );
+            }
+        }
+
+        if ( $round ) {
+            $price_float = (float) round( $price_float );
         }
 
         return array(
-            'price'   => $price,
+            'price'   => OtwFeed_Currency_Manager::format_price( $price_float, $currency ),
             'regular' => $regular,
         );
     }

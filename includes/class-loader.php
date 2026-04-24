@@ -88,10 +88,13 @@ class OtwFeed_Loader {
     }
 
     private function init_api(): void {
+        // Action Scheduler hook — each batch fires this when WP-Cron runs.
+        add_action( OtwFeed_Background_Generator::AS_HOOK, array( 'OtwFeed_Background_Generator', 'run_batch' ), 10, 2 );
+
         add_action( 'rest_api_init', static function () {
             $controller = new OtwFeed_REST_Feeds();
             $controller->register_routes();
-            OtwFeed_Background_Generator::register_rest_route();
+            OtwFeed_Background_Generator::register_rest_route(); // legacy fallback
         } );
     }
 
