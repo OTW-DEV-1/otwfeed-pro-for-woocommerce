@@ -122,8 +122,7 @@ class OtwFeed_Product_Query {
                             $var,
                             $feed->tax_mode,
                             $feed->country,
-                            $feed->currency,
-                            false
+                            $feed->currency
                         );
                         if ( ! isset( $by_parent[ $pid ] ) || $price < $by_parent[ $pid ]['price'] ) {
                             $by_parent[ $pid ] = array( 'var' => $var, 'price' => $price );
@@ -240,8 +239,7 @@ class OtwFeed_Product_Query {
                     $product,
                     $feed->tax_mode,
                     $feed->country,
-                    $feed->currency,
-                    false
+                    $feed->currency
                 );
                 break;
 
@@ -282,8 +280,10 @@ class OtwFeed_Product_Query {
         }
 
         switch ( $op ) {
-            case 'eq':  return $actual === $expected;
-            case 'neq': return $actual !== $expected;
+            case 'eq':
+            case 'equals':      return $actual === $expected;
+            case 'neq':
+            case 'not_equals':  return $actual !== $expected;
             case 'lt':  return (float) $actual <  (float) $expected;
             case 'lte': return (float) $actual <= (float) $expected;
             case 'gt':  return (float) $actual >  (float) $expected;

@@ -89,8 +89,8 @@ class OtwFeed_DB_Filters {
 
     public static function get_conditions(): array {
         return array(
-            'equals'       => __( 'Equals',                'otwfeed-pro' ),
-            'not_equals'   => __( 'Not Equals',            'otwfeed-pro' ),
+            'eq'           => __( 'Equals',                'otwfeed-pro' ),
+            'neq'          => __( 'Not Equals',            'otwfeed-pro' ),
             'contains'     => __( 'Contains',              'otwfeed-pro' ),
             'not_contains' => __( 'Not Contains',          'otwfeed-pro' ),
             'gt'           => __( 'Greater Than',          'otwfeed-pro' ),

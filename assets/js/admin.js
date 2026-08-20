@@ -669,6 +669,7 @@
                 tax_mode:               $('#otwfeed-tax-mode').val(),
                 skip_country_param:     $('#otwfeed-skip-country-param').is(':checked') ? 1 : 0,
                 skip_currency_param:    $('#otwfeed-skip-currency-param').is(':checked') ? 1 : 0,
+                regen_interval:         $('#otwfeed-regen-interval').val(),
             }).done(function (res) {
                 if (!res.success) {
                     setStatus($status, (res.data && res.data.message) || i18n.error, 'error');

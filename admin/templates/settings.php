@@ -14,7 +14,7 @@ if ( isset( $_POST['otwfeed_settings_nonce'] ) && wp_verify_nonce( sanitize_text
     }
 }
 
-$auto_regen     = (int) get_option( 'otwfeed_auto_regen_interval', 0 );
+$auto_regen     = OtwFeed_Scheduler::get_default_interval();
 $log_days       = (int) get_option( 'otwfeed_log_retention_days', 30 );
 $integration    = OtwFeed_Currency_Manager::detect();
 ?>
@@ -40,15 +40,13 @@ $integration    = OtwFeed_Currency_Manager::detect();
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label for="otwfeed-auto-regen" class="form-label"><?php esc_html_e( 'Auto-regenerate interval', 'otwfeed-pro' ); ?></label>
+                        <label for="otwfeed-auto-regen" class="form-label"><?php esc_html_e( 'Default update frequency for new feeds', 'otwfeed-pro' ); ?></label>
                         <select id="otwfeed-auto-regen" name="auto_regen_interval" class="form-select otwfeed-select2">
-                            <option value="0"     <?php selected( $auto_regen, 0 ); ?>><?php esc_html_e( 'Disabled', 'otwfeed-pro' ); ?></option>
-                            <option value="3600"  <?php selected( $auto_regen, 3600 ); ?>><?php esc_html_e( 'Every hour', 'otwfeed-pro' ); ?></option>
-                            <option value="21600" <?php selected( $auto_regen, 21600 ); ?>><?php esc_html_e( 'Every 6 hours', 'otwfeed-pro' ); ?></option>
-                            <option value="43200" <?php selected( $auto_regen, 43200 ); ?>><?php esc_html_e( 'Every 12 hours', 'otwfeed-pro' ); ?></option>
-                            <option value="86400" <?php selected( $auto_regen, 86400 ); ?>><?php esc_html_e( 'Daily', 'otwfeed-pro' ); ?></option>
+                            <?php foreach ( OtwFeed_Scheduler::get_intervals() as $secs => $label ) : ?>
+                                <option value="<?php echo esc_attr( $secs ); ?>" <?php selected( $auto_regen, $secs ); ?>><?php echo esc_html( $label ); ?></option>
+                            <?php endforeach; ?>
                         </select>
-                        <p class="form-text text-muted"><?php esc_html_e( 'Automatically regenerate active feeds on a schedule.', 'otwfeed-pro' ); ?></p>
+                        <p class="form-text text-muted"><?php esc_html_e( 'Pre-selected when creating a feed. Each feed has its own "Update Frequency" setting (Edit Feed > Basic Info); changing this does not affect existing feeds.', 'otwfeed-pro' ); ?></p>
                     </div>
                     <div class="col-md-4">
                         <label for="otwfeed-log-days" class="form-label"><?php esc_html_e( 'Log retention (days)', 'otwfeed-pro' ); ?></label>

@@ -10,6 +10,12 @@ $is_edit    = ! empty( $feed );
 $currencies = OtwFeed_Currency_Manager::get_currencies();
 $countries  = WC()->countries->get_countries();
 $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otwfeed-pro' );
+$regen_interval = $is_edit ? (int) ( $feed->regen_interval ?? 0 ) : OtwFeed_Scheduler::get_default_interval();
+$regen_options  = OtwFeed_Scheduler::get_intervals();
+if ( ! isset( $regen_options[ $regen_interval ] ) ) {
+    $regen_options[ $regen_interval ] = OtwFeed_Scheduler::get_interval_label( $regen_interval );
+    ksort( $regen_options );
+}
 ?>
 <div class="otwfeed-wrap wrap">
 
@@ -89,6 +95,27 @@ $page_title = $is_edit ? __( 'Edit Feed', 'otwfeed-pro' ) : __( 'New Feed', 'otw
                                 <option value="0" <?php selected( (int) ( $feed->include_gallery_images ?? 1 ), 0 ); ?>><?php esc_html_e( 'Exclude gallery images', 'otwfeed-pro' ); ?></option>
                             </select>
                             <p class="form-text text-muted"><?php esc_html_e( 'Whether to output product gallery images as additional_image_link.', 'otwfeed-pro' ); ?></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="otwfeed-regen-interval" class="form-label"><?php esc_html_e( 'Update Frequency', 'otwfeed-pro' ); ?></label>
+                            <select id="otwfeed-regen-interval" name="regen_interval" class="form-select otwfeed-select2">
+                                <?php foreach ( $regen_options as $secs => $label ) : ?>
+                                    <option value="<?php echo esc_attr( $secs ); ?>" <?php selected( $regen_interval, $secs ); ?>><?php echo esc_html( $label ); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="form-text text-muted">
+                                <?php esc_html_e( 'How often the feed file is regenerated automatically so new products, prices and stock are picked up.', 'otwfeed-pro' ); ?>
+                                <?php if ( $is_edit ) : ?>
+                                    <br>
+                                    <strong><?php esc_html_e( 'Last generated:', 'otwfeed-pro' ); ?></strong>
+                                    <?php echo $feed->last_gen
+                                        ? esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $feed->last_gen ) ) )
+                                        : esc_html__( 'Never', 'otwfeed-pro' ); ?>
+                                    &nbsp;&middot;&nbsp;
+                                    <strong><?php esc_html_e( 'Next update:', 'otwfeed-pro' ); ?></strong>
+                                    <?php echo esc_html( OtwFeed_Scheduler::describe_next_run( $feed ) ); ?>
+                                <?php endif; ?>
+                            </p>
                         </div>
                     </div>
 

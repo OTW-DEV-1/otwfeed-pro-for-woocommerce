@@ -44,6 +44,7 @@ class OtwFeed_Loader {
         require_once OTWFEED_DIR . 'includes/feed/class-feed-builder-facebook.php';
         require_once OTWFEED_DIR . 'includes/feed/class-feed-generator.php';
         require_once OTWFEED_DIR . 'includes/class-background-generator.php';
+        require_once OTWFEED_DIR . 'includes/class-scheduler.php';
 
         // REST.
         require_once OTWFEED_DIR . 'includes/api/class-rest-feeds.php';
@@ -61,6 +62,14 @@ class OtwFeed_Loader {
                 OtwFeed_Activator::drop_filters_table();
             }
             OtwFeed_Activator::activate();
+            if ( $installed < 8 && $installed > 0 ) {
+                // v8: per-feed regen_interval. Carry the old global setting over to existing feeds.
+                $global = get_option( 'otwfeed_auto_regen_interval', null );
+                if ( null !== $global ) {
+                    global $wpdb;
+                    $wpdb->query( $wpdb->prepare( 'UPDATE %i SET regen_interval = %d', $wpdb->prefix . 'otwfeed_feeds', absint( $global ) ) ); // phpcs:ignore
+                }
+            }
         }
     }
 
@@ -90,6 +99,9 @@ class OtwFeed_Loader {
     private function init_api(): void {
         // Action Scheduler hook — each batch fires this when WP-Cron runs.
         add_action( OtwFeed_Background_Generator::AS_HOOK, array( 'OtwFeed_Background_Generator', 'run_batch' ), 10, 2 );
+
+        // Recurring auto-regeneration tick (per-feed regen_interval).
+        OtwFeed_Scheduler::init();
 
         add_action( 'rest_api_init', static function () {
             $controller = new OtwFeed_REST_Feeds();
