@@ -135,7 +135,7 @@ foreach ( $feeds as $f ) {
                                     </td>
                                     <td class="text-muted small">
                                         <?php echo $feed->last_gen
-                                            ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $feed->last_gen ) ) )
+                                            ? esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $feed->last_gen ) ) )
                                             : esc_html__( 'Never', 'otwfeed-pro' );
                                         ?>
                                     </td>
