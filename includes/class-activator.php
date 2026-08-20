@@ -13,7 +13,9 @@ class OtwFeed_Activator {
     }
 
     public static function deactivate(): void {
-        // Intentionally left empty — keep data on deactivate.
+        // Keep data; only remove the recurring auto-regeneration tick.
+        require_once OTWFEED_DIR . 'includes/class-scheduler.php';
+        OtwFeed_Scheduler::unschedule();
     }
 
     public static function drop_filters_table(): void {
@@ -38,6 +40,7 @@ class OtwFeed_Activator {
             include_gallery_images TINYINT(1)      NOT NULL DEFAULT 1,
             skip_country_param     TINYINT(1)      NOT NULL DEFAULT 0,
             skip_currency_param    TINYINT(1)      NOT NULL DEFAULT 0,
+            regen_interval         INT UNSIGNED    NOT NULL DEFAULT 86400,
             product_count     INT UNSIGNED    NOT NULL DEFAULT 0,
             last_gen          DATETIME        DEFAULT NULL,
             file_path         VARCHAR(500)    NOT NULL DEFAULT '',

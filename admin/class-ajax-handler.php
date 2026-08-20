@@ -59,6 +59,7 @@ class OtwFeed_Ajax_Handler {
             'include_gallery_images' => absint( $_POST['include_gallery_images'] ?? 1 ),
             'skip_country_param'     => absint( $_POST['skip_country_param']     ?? 0 ),
             'skip_currency_param'    => absint( $_POST['skip_currency_param']    ?? 0 ),
+            'regen_interval'         => absint( $_POST['regen_interval'] ?? OtwFeed_Scheduler::get_default_interval() ),
         );
 
         if ( empty( $data['title'] ) ) {

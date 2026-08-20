@@ -4,7 +4,7 @@ declare(strict_types=1);
  * Plugin Name:       OtwFeed Pro for WooCommerce
  * Plugin URI:        https://otwdesign.it/otwfeed-pro
  * Description:       Localized product feeds for Google Merchant Center and Facebook Business Manager with advanced currency and tax handling.
- * Version:           1.0.0
+ * Version:           1.0.3
  * Author:            OTW Design
  * Author URI:        https://otwdesign.it
  * License:           GPL-2.0-or-later
@@ -21,12 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'OTWFEED_VERSION',  '1.0.0' );
+define( 'OTWFEED_VERSION',  '1.0.3' );
 define( 'OTWFEED_FILE',     __FILE__ );
 define( 'OTWFEED_DIR',      plugin_dir_path( __FILE__ ) );
 define( 'OTWFEED_URL',      plugin_dir_url( __FILE__ ) );
 define( 'OTWFEED_SLUG',     'otwfeed-pro' );
-define( 'OTWFEED_DB_VER',   7 );
+define( 'OTWFEED_DB_VER',   8 );
 
 // WooCommerce HPOS compatibility declaration.
 add_action( 'before_woocommerce_init', static function () {

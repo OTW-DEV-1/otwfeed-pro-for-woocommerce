@@ -23,6 +23,11 @@ foreach ( $feeds as $f ) {
 <?php endif; ?>
 <div class="otwfeed-wrap wrap">
 
+    <?php $scheduler_warning = OtwFeed_Scheduler::get_health_warning(); ?>
+    <?php if ( $scheduler_warning && $active > 0 ) : ?>
+        <div class="alert alert-warning" role="alert"><?php echo esc_html( $scheduler_warning ); ?></div>
+    <?php endif; ?>
+
     <div class="otwfeed-header">
         <div class="otwfeed-header__logo">
             <span class="dashicons dashicons-rss" aria-hidden="true"></span>
@@ -104,6 +109,7 @@ foreach ( $feeds as $f ) {
                                 <th scope="col"><?php esc_html_e( 'Tax Mode', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Status', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Last Generated', 'otwfeed-pro' ); ?></th>
+                                <th scope="col"><?php esc_html_e( 'Auto Update', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Products', 'otwfeed-pro' ); ?></th>
                                 <th scope="col"><?php esc_html_e( 'Actions', 'otwfeed-pro' ); ?></th>
                             </tr>
@@ -132,6 +138,12 @@ foreach ( $feeds as $f ) {
                                             ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $feed->last_gen ) ) )
                                             : esc_html__( 'Never', 'otwfeed-pro' );
                                         ?>
+                                    </td>
+                                    <td class="text-muted small">
+                                        <?php echo esc_html( OtwFeed_Scheduler::get_interval_label( (int) ( $feed->regen_interval ?? 0 ) ) ); ?>
+                                        <?php if ( (int) ( $feed->regen_interval ?? 0 ) > 0 ) : ?>
+                                            <br><span class="otwfeed-next-run" title="<?php esc_attr_e( 'Next automatic update', 'otwfeed-pro' ); ?>">&rarr; <?php echo esc_html( OtwFeed_Scheduler::describe_next_run( $feed ) ); ?></span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="text-muted small otwfeed-product-count">
                                         <?php echo ! empty( $feed->product_count )
