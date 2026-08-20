@@ -20,7 +20,7 @@ class OtwFeed_Feed_Builder_Facebook {
         $desc = esc_xml( get_bloginfo( 'description' ) );
 
         return '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
-             . '<rss version="2.0" xmlns:c="http://base.google.com/ns/1.0">' . "\n"
+             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">' . "\n"
              . '<channel>' . "\n"
              . "<title>{$name}</title>\n"
              . "<link>{$url}</link>\n"
@@ -93,16 +93,18 @@ class OtwFeed_Feed_Builder_Facebook {
             if ( '' === $value ) {
                 continue;
             }
-            $xml .= self::xml_tag( $mapping->channel_tag, $value, 'description' === $mapping->channel_tag );
+            $xml .= self::xml_tag( $mapping->channel_tag, $value, in_array( $mapping->channel_tag, array( 'description', 'g:description' ), true ) );
         }
 
         if ( ! empty( $prices['regular'] ) ) {
             $xml .= self::xml_tag( 'sale_price', $prices['price'] );
         }
 
-        foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
-            if ( ! empty( $extra_image ) ) {
-                $xml .= self::xml_tag( 'additional_image_link', (string) $extra_image );
+        if ( (int) ( $feed->include_gallery_images ?? 1 ) ) {
+            foreach ( array_slice( $attrs['extra_images'], 0, 9 ) as $extra_image ) {
+                if ( ! empty( $extra_image ) ) {
+                    $xml .= self::xml_tag( 'additional_image_link', (string) $extra_image );
+                }
             }
         }
 
